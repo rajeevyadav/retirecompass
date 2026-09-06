@@ -252,3 +252,17 @@ dl.glossary dd { margin: .15rem 0 0; color: var(--muted); line-height: 1.5; }
 footer .downloads { margin-top: .4rem; font-size: .85rem; }
 footer .downloads a { color: #0e7c7b; font-weight: 600; }
 @media print { footer .downloads { display: none; } }
+
+/* Print: make wide data tables fit the page instead of being cut at the margin.
+   Fixed layout + small type + wrapping keeps every column on the page. The
+   per-page running footer (© + tool name) is defined above as position:fixed. */
+@media print {
+  table, .report-table { width: 100% !important; table-layout: fixed; border-collapse: collapse;
+                          font-size: 7.5pt; white-space: normal !important; }
+  table th, table td, .report-table th, .report-table td {
+    padding: 2px 3px; overflow: hidden; word-break: break-word; text-overflow: ellipsis; }
+  .table-wrap { overflow: visible !important; }
+  .chart-svg { max-width: 100%; }
+  /* Reserve space so content never prints under the fixed running header/footer. */
+  .wrap { padding-top: 6mm; padding-bottom: 8mm; }
+}

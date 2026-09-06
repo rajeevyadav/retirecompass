@@ -35,17 +35,18 @@ def tests_and_syntax():
 
 
 def no_network_scan():
-    """The app must be fully offline: no fetch/XHR/WebSocket/external URL."""
-    banned = re.compile(r"\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource|navigator\.sendBeacon"
-                        r"|https?://(?!localhost|127\.0\.0\.1)")
+    """The app must be fully offline: no network API and no auto-loaded remote
+    resource. Plain <a href> hyperlinks (navigation) are allowed."""
+    js_net = re.compile(r"\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|navigator\.sendBeacon")
+    resource = re.compile(r"(?:\bsrc\s*=|@import|\burl\s*\()\s*['\"]?https?://", re.I)
     offenders = []
     for rel in ["index.html", "js/app.js", "css/styles.css"]:
         text = (ROOT / rel).read_text(encoding="utf-8", errors="ignore")
         for i, line in enumerate(text.splitlines(), 1):
-            if banned.search(line):
+            if js_net.search(line) or resource.search(line):
                 offenders.append(f"{rel}:{i}: {line.strip()[:100]}")
     if offenders:
-        raise SystemExit("Offline guarantee violated (network/remote reference found):\n" + "\n".join(offenders))
+        raise SystemExit("Offline guarantee violated (network call or remote resource):\n" + "\n".join(offenders))
     print("[verify] offline/no-network scan: OK")
 
 

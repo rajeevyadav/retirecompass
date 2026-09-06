@@ -1,15 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="RetireCompass logo">
-  <circle cx="48" cy="48" r="44" fill="#f7f3e9" stroke="#1b3a4b" stroke-width="4"/>
-  <circle cx="48" cy="48" r="34" fill="none" stroke="#0e7c7b" stroke-width="1.5" opacity="0.5"/>
-  <!-- compass needle: navy north, teal south -->
-  <polygon points="48,14 56,48 48,44 40,48" fill="#1b3a4b"/>
-  <polygon points="48,82 40,48 48,52 56,48" fill="#0e7c7b"/>
-  <!-- cardinal ticks -->
-  <g stroke="#1b3a4b" stroke-width="2" stroke-linecap="round">
-    <line x1="48" y1="8" x2="48" y2="16"/>
-    <line x1="48" y1="80" x2="48" y2="88"/>
-    <line x1="8" y1="48" x2="16" y2="48"/>
-    <line x1="80" y1="48" x2="88" y2="48"/>
+  <defs>
+    <clipPath id="dial"><circle cx="48" cy="48" r="43"/></clipPath>
+  </defs>
+  <circle cx="48" cy="48" r="45" fill="#f7f3e9"/>
+  <circle cx="48" cy="48" r="45" fill="none" stroke="#1b3a4b" stroke-width="3"/>
+  <!-- degree ticks -->
+  <g clip-path="url(#dial)" stroke="#1b3a4b" stroke-width="1" opacity="0.35">
+    <g id="t"><line x1="48" y1="6" x2="48" y2="12"/></g>
+    <use href="#t" transform="rotate(30 48 48)"/><use href="#t" transform="rotate(60 48 48)"/>
+    <use href="#t" transform="rotate(90 48 48)"/><use href="#t" transform="rotate(120 48 48)"/>
+    <use href="#t" transform="rotate(150 48 48)"/><use href="#t" transform="rotate(180 48 48)"/>
+    <use href="#t" transform="rotate(210 48 48)"/><use href="#t" transform="rotate(240 48 48)"/>
+    <use href="#t" transform="rotate(270 48 48)"/><use href="#t" transform="rotate(300 48 48)"/>
+    <use href="#t" transform="rotate(330 48 48)"/>
   </g>
-  <circle cx="48" cy="48" r="5" fill="#c9a227" stroke="#1b3a4b" stroke-width="1.5"/>
+  <circle cx="48" cy="48" r="35" fill="none" stroke="#0e7c7b" stroke-width="1.5" opacity="0.55"/>
+  <!-- compass star: East-West (teal), then South (navy), then North (gold) -->
+  <polygon points="15,48 48,44 81,48 48,52" fill="#0e7c7b"/>
+  <polygon points="43,48 53,48 48,80" fill="#1b3a4b"/>
+  <polygon points="43,48 53,48 48,16" fill="#c9a227"/>
+  <circle cx="48" cy="48" r="4.5" fill="#f7f3e9" stroke="#1b3a4b" stroke-width="1.6"/>
 </svg>
