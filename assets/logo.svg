@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="RetireCompass logo">
+  <circle cx="48" cy="48" r="44" fill="#f7f3e9" stroke="#1b3a4b" stroke-width="4"/>
+  <circle cx="48" cy="48" r="34" fill="none" stroke="#0e7c7b" stroke-width="1.5" opacity="0.5"/>
+  <!-- compass needle: navy north, teal south -->
+  <polygon points="48,14 56,48 48,44 40,48" fill="#1b3a4b"/>
+  <polygon points="48,82 40,48 48,52 56,48" fill="#0e7c7b"/>
+  <!-- cardinal ticks -->
+  <g stroke="#1b3a4b" stroke-width="2" stroke-linecap="round">
+    <line x1="48" y1="8" x2="48" y2="16"/>
+    <line x1="48" y1="80" x2="48" y2="88"/>
+    <line x1="8" y1="48" x2="16" y2="48"/>
+    <line x1="80" y1="48" x2="88" y2="48"/>
+  </g>
+  <circle cx="48" cy="48" r="5" fill="#c9a227" stroke="#1b3a4b" stroke-width="1.5"/>
+</svg>

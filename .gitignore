@@ -1,0 +1,23 @@
+# Build output
+/dist/
+/build/
+*.spec
+__pycache__/
+*.pyc
+
+# Local env / editor
+.env
+.venv/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Never commit private data or secrets
+/private/
+*.key
+*.pem
+secrets.*
+
+# Local engineering-standards guidance — not published
+CLAUDE.md

@@ -1,0 +1,66 @@
+name: Build desktop packages
+# Standalone RetireCompass launcher for Windows, macOS and Linux. PyInstaller
+# cannot cross-compile, so each package is built on its own OS. Runs on a version
+# tag (v*) and attaches the packages to the matching GitHub Release.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+permissions: { contents: read }
+jobs:
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, label: windows, sep: ";" }
+          - { os: macos-latest,   label: macos,   sep: ":" }
+          - { os: ubuntu-latest,  label: linux,   sep: ":" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install build dependency
+        run: pip install -r requirements-build.txt
+      - name: Build with PyInstaller
+        shell: bash
+        env: { SEP: "${{ matrix.sep }}" }
+        run: |
+          VERSION_FLAG=""
+          if [ "${{ matrix.label }}" = "windows" ]; then VERSION_FLAG="--version-file version_info.txt"; fi
+          pyinstaller --noconfirm --clean --onefile --name RetireCompass $VERSION_FLAG \
+            --add-data "index.html${SEP}." \
+            --add-data "css${SEP}css" \
+            --add-data "js${SEP}js" \
+            --add-data "assets${SEP}assets" \
+            --add-data "LICENSE${SEP}." \
+            run_retirecompass.py
+      - name: Package artifact
+        shell: bash
+        run: |
+          cd dist
+          case "${{ matrix.label }}" in
+            windows) 7z a "../RetireCompass-windows.zip" RetireCompass.exe ;;
+            macos)   zip "../RetireCompass-macos.zip" RetireCompass ;;
+            linux)   chmod +x RetireCompass && tar -czf "../RetireCompass-linux.tar.gz" RetireCompass ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RetireCompass-${{ matrix.label }}
+          if-no-files-found: error
+          path: |
+            RetireCompass-windows.zip
+            RetireCompass-macos.zip
+            RetireCompass-linux.tar.gz
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: packages, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with: { files: packages/*, fail_on_unmatched_files: true }
