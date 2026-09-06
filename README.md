@@ -19,10 +19,10 @@ RetireCompass runs entirely on your device. No account, no subscription, no clou
 
 ## Try it
 
-- **In your browser:** open the live app — nothing to install. *(GitHub Pages, once enabled: `https://rajeevyadav.github.io/retirecompass/`)*
+- **In your browser:** use it live at **<https://rajeevyadav.github.io/retirecompass/>** — nothing to install.
 - **On your desktop:** download the offline app for **Windows / macOS / Linux** from the [latest release](https://github.com/rajeevyadav/retirecompass/releases/latest). It opens in your browser at `http://127.0.0.1:8777/` and runs with no internet connection.
 
-It is fully responsive — the same tool works on a phone, tablet or desktop.
+The same tool is fully responsive on a phone, tablet or desktop.
 
 ---
 
