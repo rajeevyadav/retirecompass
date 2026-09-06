@@ -1,0 +1,2 @@
+# RetireCompass is a fully client-side app: no runtime Python dependencies.
+# The desktop launcher (run_retirecompass.py) uses only the standard library.

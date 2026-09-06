@@ -1,0 +1,24 @@
+name: Deploy app to GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths: ["index.html", "css/**", "js/**", "assets/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  deploy:
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Assemble the app (static files only)
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r css js assets _site/
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Everything runs on this device. The policy below blocks any network fetch,
+       remote script, or external connection, so your numbers never leave. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+  <meta name="description" content="RetireCompass — a free, offline household retirement navigator. Will your money last? Deterministic, on your machine, no account, no cloud, no advice.">
+  <meta name="color-scheme" content="light">
+  <title>RetireCompass — will your money last?</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="app">
+  <div>
+    <h1>RetireCompass <span id="versionBadge" class="version-badge"></span></h1>
+    <div class="tag">What you actually spend, inflated realistically, until the age you choose — kids, parents, debt, a partner, and currency all included.</div>
+  </div>
+  <div class="toolbar">
+    <button type="button" id="run">Calculate</button>
+    <button type="button" class="ghost" id="print">Print / PDF</button>
+    <button type="button" class="ghost" id="reset">Reset</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="seg" id="mainTabs">
+    <button type="button" class="on" data-tab="plan">Plan</button>
+    <button type="button" data-tab="guide">Guide, Manual &amp; Glossary</button>
+  </div>
+
+  <div id="panelPlan">
+  <div class="disclaimer">
+    <strong>Decision-support only — “as is”.</strong>
+    Not tax, legal or investment advice. Tax brackets, pension clawback and healthcare
+    surcharge rules below are simplified planning estimates, not a real tax filing.
+    Everything runs on your device — nothing you type is sent anywhere.
+  </div>
+
+  <section class="module">
+    <h2>0. How this tool thinks about your number</h2>
+    <p class="lead">Most retirement calculators assume you'll spend 70–80% of today's income forever and call it done. This one instead asks: what does your actual life cost today — kids, parents, debt, healthcare, housing — and how does each of those pieces change as you get older? It adds those up year by year, in the currency and city you'll really be living in, until the age you tell it to plan to. A flat "4% withdrawal rule" is never used as the answer by itself. <b>New here? Open the "Guide, Manual &amp; Glossary" tab above first</b> — it explains why the tool is built this way, walks through every section, and defines every term in plain language.</p>
+  </section>
+
+  <section class="module">
+    <h2>1. You, your household, and your money's currency</h2>
+    <div class="grid">
+      <div><label>Household name (just a label for your reports)</label><input id="label" value="Household"></div>
+      <div><label>Country where you pay tax / hold accounts</label><select id="country"></select></div>
+      <div><label>Cost of living where you'll actually retire</label><select id="city"></select></div>
+      <div><label>Currency your investment accounts are held in (set automatically from your country above)</label><input id="ccy" value="CAD" readonly></div>
+      <div><label>Currency you'll spend in, if different (leave blank if same)</label><input id="spendCcy" value=""></div>
+      <div><label>Exchange rate today (units of spending currency per 1 unit of account currency)</label><input id="fx" type="number" step="0.0001" value="1"></div>
+      <div><label>Expected yearly change in that rate (positive = spending currency getting stronger vs. your accounts)</label><input id="fxDrift" type="number" step="0.005" value="0"></div>
+      <div><label>Your age today</label><input id="ageNow" type="number" value="49"></div>
+      <div><label>Age you plan to stop working</label><input id="ageRet" type="number" value="65"></div>
+      <div><label>Age to plan all the way to</label><input id="ageEnd" type="number" value="100"></div>
+      <div><label>How should we calculate what you'll need?</label>
+        <select id="needRule">
+          <option value="salary">Assume you'll keep spending like your current take-home pay</option>
+          <option value="spend">Only use the specific costs you type in below</option>
+          <option value="max">Whichever of the two is higher, each year</option>
+        </select>
+      </div>
+      <div><label>Yearly lifestyle cost increase (typically 4%–8%, higher than general inflation)</label><input id="lifeInf" type="number" step="0.005" value="0.05"></div>
+      <div><label>Extra yearly cost increase specific to this city</label><input id="cityExtra" type="number" step="0.005" value="0.01"></div>
+    </div>
+    <p class="lead" id="cityNote"></p>
+    <p class="lead" id="replNote"></p>
+  </section>
+
+  <section class="module">
+    <h2>2. Your job: pay, layoff risk, and disability</h2>
+    <div class="grid">
+      <div><label>Your profession (loads typical numbers below — you can edit them)</label><select id="profession"></select></div>
+      <div><label>Your salary today</label><input id="youInc" type="number" value="110000"></div>
+      <div><label>Cost-of-living multiplier for this profession (1.10 = your field runs 10% above a typical household)</label><input id="colMult" type="number" step="0.01" value="1.10"></div>
+      <div><label>Starting yearly chance of losing your job, at the "turning-point age" below</label><input id="h0" type="number" step="0.001" value="0.03"></div>
+      <div><label>How fast that yearly chance grows with age (higher = risk climbs faster)</label><input id="hk" type="number" step="0.01" value="0.14"></div>
+      <div><label>"Turning-point age" — when job-loss risk starts climbing</label><input id="aStar" type="number" value="50"></div>
+      <div><label>Highest that yearly chance can ever reach (a ceiling on the risk)</label><input id="hCap" type="number" step="0.01" value="0.28"></div>
+      <div><label>If it happens, how much of a year would you typically be without pay? (0.40 ≈ about 5 months)</label><input id="outFrac" type="number" step="0.05" value="0.40"></div>
+      <div><label>Also model one guaranteed job-loss event (on top of the yearly chance above)?</label><select id="shockOn"><option>NO</option><option>YES</option></select></div>
+      <div><label>Age that guaranteed job loss happens</label><input id="shockAge" type="number" value="58"></div>
+      <div><label>How many years it lasts</label><input id="shockYrs" type="number" value="2"></div>
+      <div><label>Also model a disability or reduced-hours period?</label><select id="disOn"><option>NO</option><option>YES</option></select></div>
+      <div><label>Age that disability/reduced-hours period starts</label><input id="disAge" type="number" value="57"></div>
+      <div><label>How many years it lasts</label><input id="disYrs" type="number" value="3"></div>
+      <div><label>Pay you'd still receive during it (0.40 = 40% of normal pay)</label><input id="disFactor" type="number" step="0.05" value="0.40"></div>
+    </div>
+    <p class="lead" id="profNote"></p>
+    <p class="lead" id="hazPrev"></p>
+  </section>
+
+  <section class="module">
+    <h2>3. Partner, and planning for one of you passing away first</h2>
+    <div class="grid">
+      <div><label>Do you have a partner to include in this plan?</label><select id="partnerOn"><option>YES</option><option>NO</option></select></div>
+      <div><label>Partner's age today</label><input id="pAge" type="number" value="47"></div>
+      <div><label>Age your partner plans to stop working</label><input id="pRet" type="number" value="63"></div>
+      <div><label>Partner's salary today</label><input id="pInc" type="number" value="72000"></div>
+      <div><label>Partner's public pension, in today's dollars</label><input id="pPub" type="number" value="18000"></div>
+      <div><label>Age partner's pension starts</label><input id="pPubAge" type="number" value="65"></div>
+      <div><label>Share of household costs that remain once only one of you is still working (0.85 = 85% of costs remain — most of the house is still there)</label><input id="pColStay" type="number" step="0.05" value="0.85"></div>
+      <div><label>Plan for one of you passing away before the other?</label><select id="survOn"><option>NO</option><option>YES</option></select></div>
+      <div><label>Who is assumed to pass away first</label><select id="survWho"><option>partner</option><option>you</option></select></div>
+      <div><label>Age that person is expected to pass away</label><input id="survAge" type="number" value="78"></div>
+      <div><label>Share of that person's pension the survivor keeps afterward (0.60 = 60%)</label><input id="survPen" type="number" step="0.05" value="0.60"></div>
+      <div><label>Share of household costs the survivor still has afterward (0.75 = 75% — living alone doesn't halve your bills)</label><input id="survCol" type="number" step="0.05" value="0.75"></div>
+    </div>
+  </section>
+
+  <section class="module">
+    <h2>4. Kids — while dependent, through school, and after independence</h2>
+    <p class="lead">"Indep." is the age each child becomes financially independent. Pick an "Education program" to load a realistic typical tuition and duration — medical school costs nothing like a public college lived at home, and both are edited below the preset if your real numbers differ. "After-help" is money you keep sending after independence (rent top-ups, etc.) and "Until" is the age that stops. "They pay you" is any money an adult child sends back to you each year (rent, family support) starting from the independence age. <b>No children? Leave this table empty</b> — single, divorced-with-no-kids, and child-free households are all completely normal here; nothing else in the plan requires a row in this table.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Age now</th><th>Indep. age</th><th>Living costs you pay/yr</th>
+          <th>Education program (loads a typical tuition/duration — edit after)</th>
+          <th>Tuition/yr</th><th>Tuition from age</th><th>Tuition to age</th>
+          <th>After-help/yr</th><th>Help stops at age</th>
+          <th>They pay you/yr</th><th></th>
+        </tr></thead>
+        <tbody id="kidsBody"></tbody>
+      </table>
+    </div>
+    <div class="row-actions"><button type="button" id="addKid">Add child</button></div>
+    <div class="grid" style="margin-top:.8rem">
+      <div><label>Education savings balance today (RESP, 529, or similar account — leave 0 if not applicable)</label><input id="eduPot" type="number" value="0"></div>
+      <div><label>Expected yearly growth rate of that education account</label><input id="eduRet" type="number" step="0.001" value="0.04"></div>
+      <div><label>Are you actively contributing to a registered education plan (RESP/529/Junior ISA or your country's equivalent)?</label><select id="eduRegistered"><option>YES</option><option selected>NO</option></select></div>
+    </div>
+    <p class="lead">Tuition is paid first from this education account; whatever it can't cover comes out of household cashflow instead.</p>
+  </section>
+
+  <section class="module">
+    <h2>5. Supporting a parent (eldercare)</h2>
+    <div class="grid">
+      <div><label>Will you be financially supporting a parent?</label><select id="parOn"><option>NO</option><option>YES</option></select></div>
+      <div><label>Your parent's age today</label><input id="parAge" type="number" value="76"></div>
+      <div><label>Amount you pay them per year, today</label><input id="parCost" type="number" value="12000"></div>
+      <div><label>Age this support is expected to stop (e.g. full-time care starts, or passing)</label><input id="parUntil" type="number" value="92"></div>
+    </div>
+  </section>
+
+  <section class="module">
+    <h2>6. One-off gifts (wedding, house down-payment, etc.)</h2>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>What it's for</th><th>Your age when you pay it</th><th>Amount, in today's dollars</th><th></th></tr></thead>
+      <tbody id="giftBody"></tbody>
+    </table>
+    </div>
+    <div class="row-actions"><button type="button" id="addGift">Add a one-off gift</button></div>
+  </section>
+
+  <section class="module">
+    <h2>7. Pets</h2>
+    <p class="lead">Food, grooming, insurance and routine vet care for each pet, plus a rough vet-cost cushion for the unplanned stuff. "Ends at your age" is simply when you expect that cost to stop (the pet's expected lifespan) — add another row later if you plan to get a new pet.</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Pet name</th><th>Food/grooming/insurance $/yr</th><th>Routine + unplanned vet $/yr</th><th>Ends at your age</th><th></th></tr></thead>
+      <tbody id="petsBody"></tbody>
+    </table>
+    </div>
+    <div class="row-actions"><button type="button" id="addPet">Add pet</button></div>
+  </section>
+
+  <section class="module">
+    <h2>8. Learning new skills, and paying down debt</h2>
+    <div class="grid">
+      <div><label>Yearly spending on courses / upskilling while working</label><input id="upskill" type="number" value="2500"></div>
+      <div><label>Age you'll stop spending on that</label><input id="upskillUntil" type="number" value="62"></div>
+    </div>
+    <p class="lead">List every mortgage, credit card, line of credit, auto loan and student loan below. "APR" is the yearly interest rate (0.045 = 4.5%). If a card's yearly payment doesn't even cover the interest, the tool will flag it — that balance is growing, not shrinking.</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>What it is</th><th>Type</th><th>Balance owed</th><th>APR (yearly interest rate)</th><th>Amount you pay per year</th><th></th></tr></thead>
+      <tbody id="debtBody"></tbody>
+    </table>
+    </div>
+    <div class="row-actions"><button type="button" id="addDebt">Add a debt</button></div>
+  </section>
+
+  <section class="module">
+    <h2>9. Insurance</h2>
+    <div class="grid">
+      <div><label>Life insurance premium, per year</label><input id="lifePrem" type="number" value="1800"></div>
+      <div><label>Age your life insurance ends</label><input id="lifeUntil" type="number" value="70"></div>
+      <div><label>Disability insurance premium, per year</label><input id="diPrem" type="number" value="1200"></div>
+      <div><label>Age your disability insurance ends</label><input id="diUntil" type="number" value="65"></div>
+      <div><label>Yearly payout your disability insurance provides if you become disabled</label><input id="diBen" type="number" value="48000"></div>
+      <div><label>Critical-illness insurance premium, per year</label><input id="ciPrem" type="number" value="600"></div>
+      <div><label>Age your critical-illness insurance ends</label><input id="ciUntil" type="number" value="65"></div>
+    </div>
+  </section>
+
+  <section class="module">
+    <h2>10. Selling or downsizing your home</h2>
+    <div class="grid">
+      <div><label>Do you plan to sell or downsize your home?</label><select id="homeOn"><option>NO</option><option>YES</option></select></div>
+      <div><label>Your age when you'll sell</label><input id="homeAge" type="number" value="72"></div>
+      <div><label>Money you'd walk away with, after costs and tax, in today's dollars</label><input id="homeNet" type="number" value="250000"></div>
+      <div><label>How your yearly housing costs change after that (negative = costs go down)</label><input id="homeCarryDelta" type="number" value="-3000"></div>
+    </div>
+  </section>
+
+  <section class="module">
+    <h2>11. Investment accounts and contribution limits</h2>
+    <p class="lead" id="acctNote"></p>
+    <div class="grid" id="acctGrid"></div>
+    <div class="grid" style="margin-top:.8rem">
+      <div><label>Everything you have invested today, combined</label><input id="nest" type="number" value="380000"></div>
+      <div><label>Emergency fund balance today (a real savings account — separate from the invested accounts above, and separate from your investments)</label><input id="emergFund" type="number" value="10000"></div>
+      <div><label>Expected yearly investment growth while you're still working</label><input id="retAcc" type="number" step="0.001" value="0.065"></div>
+      <div><label>Expected yearly investment growth after you retire (usually a bit more conservative)</label><input id="retRet" type="number" step="0.001" value="0.050"></div>
+      <div><label>Yearly investment fees (as a %, this eats directly into your returns)</label><input id="mer" type="number" step="0.001" value="0.005"></div>
+      <div><label>Passive income today (rent, dividends, royalties, etc.)</label><input id="passive" type="number" value="0"></div>
+      <div><label>How much you plan to save/invest per year</label><input id="save" type="number" value="24000"></div>
+      <div><label>How much your partner plans to save/invest per year</label><input id="pSave" type="number" value="12000"></div>
+      <div><label>Are those contributions actually going into a tax-sheltered account (RRSP/TFSA, 401(k)/IRA, ISA, etc.) rather than an ordinary taxable account?</label><select id="usingShelter"><option selected>YES</option><option>NO</option></select></div>
+    </div>
+    <p class="lead" id="roomNote"></p>
+  </section>
+
+  <section class="module">
+    <h2>12. Taxes</h2>
+    <div class="grid">
+      <div><label>How should tax be calculated?</label>
+        <select id="taxMode">
+          <option value="brackets">Use this country's typical tax bands, plus pension clawback rules</option>
+          <option value="flat">Just use one flat tax rate on everything</option>
+        </select>
+      </div>
+      <div><label>Flat tax rate to use — or, if using tax bands, an extra add-on rate (e.g. state/provincial tax on top)</label><input id="taxFlat" type="number" step="0.01" value="0.10"></div>
+      <div><label>Apply pension clawback for high earners? (Canada-style: your public pension shrinks above a certain income)</label><select id="clawOn"><option>YES</option><option>NO</option></select></div>
+    </div>
+    <p class="lead">These are simplified, typical tax bands to help you plan — not a real tax return. Canada: rough federal-style bands plus pension clawback above a threshold. US: rough federal-style bands plus a healthcare-premium surcharge (like Medicare's IRMAA) when income crosses a line. Other countries: simplified bands. Always check with a real tax professional or filing software before you rely on any number here.</p>
+  </section>
+
+  <section class="module">
+    <h2>13. Everyday living costs, pensions, and long-term care</h2>
+    <div class="grid">
+      <div><label>Yearly housing costs today (property tax, insurance, maintenance, condo fees — after any mortgage is paid off, mortgage payments are tracked separately in section 7)</label><input id="house" type="number" value="9000"></div>
+      <div><label>Yearly healthcare costs today (out-of-pocket expenses plus insurance premiums)</label><input id="health" type="number" value="4500"></div>
+      <div><label>Yearly costs that disappear once you stop working (commuting, work clothes, lunches out)</label><input id="workOnly" type="number" value="4000"></div>
+      <div><label>Your core everyday living costs today (food, utilities, day-to-day spending)</label><input id="core" type="number" value="42000"></div>
+      <div><label>Discretionary spending today (travel, hobbies, dining out)</label><input id="disc" type="number" value="10000"></div>
+      <div><label>Age this discretionary spending starts slowing down</label><input id="fadeAge" type="number" value="80"></div>
+      <div><label>How much of it remains after that age (0.6 = 60% of the original amount)</label><input id="fade" type="number" step="0.05" value="0.6"></div>
+      <div><label>Occasional big-ticket costs, per year on average (roof, car, appliances)</label><input id="capex" type="number" value="0"></div>
+      <div><label>Yearly pay raise while working, above and beyond inflation</label><input id="wageReal" type="number" step="0.001" value="0.005"></div>
+      <div><label>Your public pension, in today's dollars</label><input id="pub" type="number" value="28000"></div>
+      <div><label>Age your public pension starts</label><input id="pubAge" type="number" value="65"></div>
+      <div><label>Your employer/defined-benefit pension, in today's dollars</label><input id="db" type="number" value="0"></div>
+      <div><label>Age your employer pension starts</label><input id="dbAge" type="number" value="65"></div>
+      <div><label>Any other household income once you've stopped working (in today's dollars)</label><input id="other" type="number" value="0"></div>
+      <div><label>General yearly inflation rate for this country</label><input id="infG" type="number" step="0.001" value="0.025"></div>
+      <div><label>Yearly healthcare-cost inflation (usually runs above general inflation)</label><input id="infH" type="number" step="0.001" value="0.045"></div>
+      <div><label>Yearly housing-cost inflation</label><input id="infHouse" type="number" step="0.001" value="0.040"></div>
+      <div><label>Add a long-term-care period later in life (a nursing home or full-time care)?</label><select id="ltcOn"><option>YES</option><option>NO</option></select></div>
+      <div><label>Age that long-term-care period starts</label><input id="ltcAge" type="number" value="88"></div>
+      <div><label>How many years it lasts</label><input id="ltcYrs" type="number" value="3"></div>
+      <div><label>Extra yearly cost during that period, in today's dollars</label><input id="ltcCost" type="number" value="45000"></div>
+      <div><label>Stress test: how much lower your investment returns are for the first 10 years of retirement, if markets are bad</label><input id="hair" type="number" step="0.005" value="0.03"></div>
+      <div><label>Stress test: extra healthcare inflation on top of the normal rate above</label><input id="hcAdd" type="number" step="0.005" value="0.02"></div>
+    </div>
+  </section>
+
+  <section class="module">
+    <h2>14. Your result</h2>
+    <div id="verdict" class="verdict warn">Click Calculate above.</div>
+    <div class="kpis">
+      <div class="kpi"><span>What you'll need per year, when you stop working</span><b id="kpiNeed">—</b></div>
+      <div class="kpi"><span>What you'll need per year, at your plan-to age</span><b id="kpiNeed100">—</b></div>
+      <div class="kpi"><span>What your accounts will hold when you stop working</span><b id="kpiNest">—</b></div>
+      <div class="kpi"><span>What your accounts will hold at your plan-to age</span><b id="kpiEnd">—</b></div>
+      <div class="kpi"><span>Age your money runs out (if it does)</span><b id="kpiBroke">—</b></div>
+      <div class="kpi"><span>Tax you'd pay in that first retirement year</span><b id="kpiTax">—</b></div>
+      <div class="kpi"><span>Recommended emergency fund today (age-based, separate from investments)</span><b id="kpiEmerg">—</b></div>
+    </div>
+    <p id="flags"></p>
+
+    <h3 class="chart-heading">Account balance over time — base case vs. stress case</h3>
+    <div id="balanceChart"></div>
+
+    <h3 class="chart-heading">Where the money goes, the year you stop working</h3>
+    <div id="mixBars"></div>
+  </section>
+
+  <section class="module">
+    <h2>15. Year-by-year detail</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Age</th><th>Status</th><th>Total needed that year</th><th>Kids, net</th><th>Pets</th><th>Parent support</th><th>Debt payments</th>
+          <th>Tax</th><th>Withdrawn from savings</th><th>Account balance</th><th>Education account balance</th>
+        </tr></thead>
+        <tbody id="yearBody"></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="module">
+    <h2>16. Your roadmap — what to watch for, year by year</h2>
+    <p class="lead">Not a flat wall of 40+ identical rows — this is the handful of years that actually matter for THIS plan: five-year checkpoints, and the specific years something changes (tuition starting or ending, a debt getting paid off, a modeled shock, a survivor event, a home sale, long-term care starting). Each one comes with a plain, achievable thing to check or do — not a scare tactic, and not a countdown to a number nobody can actually feel.</p>
+    <div id="roadmap"></div>
+  </section>
+
+  <section class="module" id="report"></section>
+  </div><!-- /panelPlan -->
+
+  <div id="panelGuide" style="display:none">
+    <div class="seg" id="guideTabs">
+      <button type="button" class="on" data-guide="why">Why this tool</button>
+      <button type="button" data-guide="manual">User manual</button>
+      <button type="button" data-guide="investing">Investing basics</button>
+      <button type="button" data-guide="glossary">Glossary</button>
+    </div>
+
+    <div id="guideWhy">
+      <section class="module">
+        <h2>Why RetireCompass works this way</h2>
+        <p class="lead">Most retirement calculators reduce your entire future to one formula: assume you'll spend 70–80% of today's income forever, assume a 4% withdrawal rate, and call it a plan. That approach quietly erases the exact things that actually break real households' plans. This tool was built to put those things back in, as explicit, editable inputs rather than hidden assumptions.</p>
+      </section>
+      <section class="module">
+        <h2>A note on incentives</h2>
+        <p class="lead">Many commercial retirement planning tools and advisors are paid a percentage of the assets you keep invested with them, or earn a commission when you buy a product. That's not automatically bad, but it does mean the tool has a built-in reason to make you feel like you never have quite enough — a permanently anxious client saves more, delays retiring, and keeps more money under management. This tool runs entirely on your own device, is free, and has no product to sell you, so it has no reason to do that. It's built to flag <b>both</b> directions honestly: not just "you're behind," but also "you may be saving more than you'll ever need, and could retire earlier or spend more on your health and your life now." See the roadmap and flags in your results for both kinds of finding.</p>
+      </section>
+      <section class="module">
+        <h2>The problems with a "one number" retirement calculator</h2>
+        <ul class="guide-list">
+          <li><b>Spending doesn't drop by a fixed percentage the day you retire.</b> Some costs vanish (commuting), some barely change (housing), and some go up (healthcare, travel, hobbies). Averaging them into "75% of income" hides which specific costs you're actually counting on being lower.</li>
+          <li><b>Healthcare and housing don't inflate at the same rate as everything else.</b> They usually run hotter than general inflation, for decades, and a plan that uses one blended inflation number for everything will systematically understate your real cost of living in your 70s and 80s.</li>
+          <li><b>Children don't become "independent" on a fixed schedule.</b> Tuition, a coverage gap after graduation, or a period of family support are common, real, and often land during the exact years you're hoping to retire.</li>
+          <li><b>A credit card that only gets the minimum payment is not "debt you're paying off" — it's growing.</b> A plan that just nets "debt payments" against income without checking whether a balance is actually shrinking will overstate how much progress is being made.</li>
+          <li><b>Job loss and disability risk are not evenly spread across a career.</b> In most fields the real risk climbs later in a career, exactly when it's hardest to recover from and exactly when a plan is most sensitive to an income gap.</li>
+          <li><b>A single "you'll live to 85" assumption ignores the tail risk that actually ruins plans</b> — living to 95 or 100, a long-term-care period, or the death of one partner leaving the other with less pension income but almost the same fixed costs.</li>
+          <li><b>Tax is not a flat percentage.</b> It's progressive, it interacts with pension clawback and healthcare-premium surcharge rules in some countries, and ignoring that shape can make a withdrawal plan look more efficient than it really is.</li>
+          <li><b>A single, average investment return hides sequence-of-returns risk</b> — the very real danger that a few bad years of returns right after you retire do far more damage than the same bad years spread evenly across a 40-year plan.</li>
+        </ul>
+      </section>
+      <section class="module">
+        <h2>What this tool does instead</h2>
+        <p class="lead">RetireCompass walks your household forward one year at a time, from today until the age you choose to plan to, and in every single year it recalculates: what your job/partner's job pays (and the chance either of you loses that income); what your kids, parents, pets, debt and insurance actually cost that specific year; what your pensions and investments provide; what tax you'd owe on all of that; and whether your accounts grew or shrank as a result. It reports the first year — if any — that the household runs out of money, plus a second "stress" run that assumes a worse decade of investment returns and faster healthcare inflation, so you can see not just whether the base case works but how much margin you actually have.</p>
+      </section>
+      <section class="module">
+        <h2>What "stylized" means, and why some numbers here are deliberately simplified</h2>
+        <p class="lead">Tax brackets, pension clawback thresholds, healthcare-premium surcharges and country contribution-room figures in this tool are simplified planning anchors, not a real tax filing. Building an exact tax engine for every country would take this tool well beyond what a single household needs — the goal here is to show the correct <i>shape</i> of tax (progressive, with a clawback cliff where relevant) rather than pretend a single flat percentage is realistic. Wherever it matters, replace the built-in numbers with your own, from a real tax return, a pension statement, or an insurance quote.</p>
+      </section>
+    </div>
+
+    <div id="guideManual" style="display:none">
+      <section class="module">
+        <h2>How to use RetireCompass, section by section</h2>
+        <p class="lead">Work through the "Plan" tab from section 1 to section 13, in order — each section builds on the ones before it. Section 14 (Your result) and section 15 (Year-by-year detail) are where the tool answers you back; you don't type anything there. Click <b>Calculate</b> any time to refresh the results — the year-by-year table, KPIs, flags and report all update together.</p>
+      </section>
+      <section class="module">
+        <h2>Step-by-step</h2>
+        <ol class="guide-list">
+          <li><b>Section 1 — You, your household, and your money's currency.</b> Set your ages, country, and city cost band. If you plan to retire somewhere that uses a different currency from where your investments are held, fill in the spend-currency and exchange-rate fields — otherwise leave them blank. Pick a "need rule": most households should start with "only use the specific costs you type in below" (the buckets approach) and try "assume you'll keep spending like your current take-home pay" as a sanity check afterward.</li>
+          <li><b>Section 2 — Your job.</b> Choosing a profession loads a starting cost-of-living multiplier and job-loss risk curve for that field — read the note underneath, then adjust the numbers if your own situation is different (a specific employer, a specialized niche, a union role, etc.). Only turn on the "guaranteed" job-loss or disability shocks if you want to test a specific, deliberate scenario (e.g. "what if I'm let go at 58") — leave them off for your baseline plan.</li>
+          <li><b>Section 3 — Partner.</b> If you have a partner, fill in their numbers. The "survivor path" is optional and models one of you passing away before the other — useful for checking that the surviving partner isn't left short, but not required for a first pass.</li>
+          <li><b>Sections 4–7 — Kids, parents, gifts, pets.</b> Add one row per child, and per pet. These are usually the categories people forget to plan for, or plan for only until a fixed "independence" age that doesn't match reality (adult children needing help, aging parents needing support).</li>
+          <li><b>Section 8 — Debt.</b> List every mortgage, credit card, line of credit, and loan with its real balance, interest rate and payment. If the tool flags a card as "not amortizing," that specific balance is a priority to fix before optimizing anything else — see "What to do next" in your report.</li>
+          <li><b>Section 9 — Insurance.</b> Fill in what you actually pay and what you'd actually receive — insurance is only useful in the plan if it's tied to a real policy number.</li>
+          <li><b>Section 10 — Home sale.</b> Leave this off unless you have a real, reasonably concrete plan to sell or downsize.</li>
+          <li><b>Section 11 — Accounts.</b> Enter your actual combined balance and what you intend to contribute each year. The note under this section will tell you if your intended contributions look larger than what's typically tax-sheltered in your country.</li>
+          <li><b>Section 12 — Taxes.</b> Start with "use this country's typical tax bands" — it's more realistic than a flat rate for most households, especially once pensions and withdrawals stack on top of other income.</li>
+          <li><b>Section 13 — Everyday living, pensions, LTC.</b> This is where most of your actual dollar amounts live: what your life costs today, and what your pensions pay. Take the time to get these numbers close to your real bank/credit-card statements — the rest of the tool can only be as accurate as this section.</li>
+          <li><b>Click Calculate, then read section 14 top to bottom.</b> Start with the verdict sentence, then the KPIs, then the flags (each flag is a specific, actionable finding), then the expense-mix table for the year you stop working.</li>
+          <li><b>Use Print / PDF to save a copy.</b> The generated report includes every input you entered, organized by section, plus your results and a "what to do next" list — so you (or an advisor) can review the whole plan later without having to open the tool again.</li>
+        </ol>
+      </section>
+      <section class="module">
+        <h2>A sensible order to iterate in</h2>
+        <p class="lead">First pass: fill in your real numbers everywhere and leave every "shock" toggle (job-loss shock, disability shock, survivor path) off. This is your base case. Second pass: turn on the survivor path and see if the surviving partner is still funded. Third pass: turn on a job-loss or disability shock at an age you're genuinely worried about, and see how much it moves the "money runs out" age. Treat the stress-test KPI (mentioned in the verdict) the same way — it's telling you your margin, not predicting the future.</p>
+      </section>
+    </div>
+
+    <div id="guideInvesting" style="display:none">
+      <section class="module">
+        <h2>Building safety and passive income as retirement gets closer</h2>
+        <p class="lead">This tool doesn't manage your investments, and this section is educational background, not personal investment advice — for that, talk to a licensed advisor and read a real prospectus before buying anything. But the plan above assumes a return rate (sections 11 and 13) that quietly implies an investment strategy, and most people never actually revisit that strategy as they get closer to needing the money. The core idea worth knowing: <b>the closer you are to needing money, the less you can afford for that money to be volatile</b> — so a typical, sensible pattern is to hold more in growth assets (stocks) while retirement is decades away, then gradually shift toward steadier, income-producing assets as it approaches, and keep an actual cash buffer once you're drawing from it.</p>
+      </section>
+      <section class="module">
+        <h2>An illustrative glide path (not a recommendation for you specifically)</h2>
+        <p class="lead">These numbers are a common, simplified example used to explain the idea — a real allocation should reflect your own risk tolerance, other assets (like a pension or rental property), and professional advice. This is here to make the general shape concrete, not to tell you what to do.</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>Years until you stop working</th><th>Illustrative stocks</th><th>Illustrative bonds / GICs</th><th>Illustrative cash</th></tr></thead>
+          <tbody>
+            <tr><td>25+ years out</td><td>~90%</td><td>~10%</td><td>~0%</td></tr>
+            <tr><td>15 years out</td><td>~80%</td><td>~15%</td><td>~5%</td></tr>
+            <tr><td>10 years out</td><td>~65%</td><td>~25%</td><td>~10%</td></tr>
+            <tr><td>5 years out</td><td>~50%</td><td>~35%</td><td>~15%</td></tr>
+            <tr><td>At / after stop-work age</td><td>~40%</td><td>~40%</td><td>~20% (or 1–2 years' spending held in cash specifically)</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="lead">The cash/near-cash slice in the last row exists specifically to cover the "stress test" this tool already runs (section 13's return-cut assumption) — a bad first decade of returns matters far less if you're not forced to sell stocks at a low point just to cover that year's spending.</p>
+      </section>
+      <section class="module">
+        <h2>Your emergency fund is not your investment portfolio</h2>
+        <p class="lead">A house repair, a car repair, or a job gap shouldn't ever force you to sell investments at a bad moment, or reach for a high-APR credit card — that's exactly what an emergency fund is for. It belongs in a plain savings account, not invested, and how much you need in it reasonably grows as you get older and your life gets more expensive to interrupt. This tool's "Emergency fund balance today" (section 11) is compared against the age-based target below, and any gap shows up in your flags and "what to do next."</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>Your age</th><th>Illustrative target</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Under 40</td><td>≈3 months of essential costs</td><td>Fewer dependents/obligations on average, more runway to recover from a setback.</td></tr>
+            <tr><td>40s</td><td>≈6 months</td><td>Housing, kids and health costs are usually higher and less flexible by now.</td></tr>
+            <tr><td>50s</td><td>≈9 months</td><td>A job loss takes longer to recover from later in a career (see the hazard curve in section 2).</td></tr>
+            <tr><td>Within 10 years of stopping work, or already stopped</td><td>≈12 months</td><td>This overlaps with the cash-buffer row in the glide-path table above — it's the same idea, doing double duty.</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+      <section class="module">
+        <h2>How to actually make this succeed</h2>
+        <p class="lead">A realistic plan fails for boring, fixable reasons far more often than it fails because of the stock market. In roughly the order they matter:</p>
+        <ol class="guide-list">
+          <li><b>Pay off high-APR debt before you invest more.</b> A credit card at 20% APR is a guaranteed 20% "return" on paying it down — no legitimate investment reliably beats that. Section 8's non-amortizing-card flag exists because of exactly this.</li>
+          <li><b>Automate it — pay yourself first.</b> Set your savings/investment contribution to move automatically the day you're paid, before it can become discretionary spending. Money that has to be manually moved every month gets skipped in a busy month; money that moves automatically doesn't.</li>
+          <li><b>Audit recurring subscriptions once or twice a year.</b> Streaming services, apps, memberships, and subscription boxes are individually small and collectively easy to lose track of. As a worked example: three $15/month subscriptions you're not really using is $45/month — redirected into an investment account for 20 years at a 6% return, that's roughly $21,000, from money you likely wouldn't miss today.</li>
+          <li><b>Redirect raises before you get used to them.</b> When your income rises, increase your savings rate by at least half of the raise before your lifestyle absorbs all of it — this is the single biggest lever most people never pull.</li>
+          <li><b>Keep the emergency fund separate and untouched for its actual purpose.</b> If it becomes the "vacation fund" it stops being an emergency fund, and the next real emergency goes on a credit card instead.</li>
+          <li><b>Don't try to time the market, and don't panic-sell in a downturn.</b> The stress test in this tool exists so a bad decade is already priced into your plan — reacting to it by selling low turns a modeled risk into a real, permanent loss.</li>
+          <li><b>Rebalance roughly once a year</b> back toward the allocation you intended (see the glide-path table above), rather than letting whichever asset did best lately quietly take over your risk level.</li>
+          <li><b>Prefer low-fee, broadly diversified funds</b> over picking individual stocks or paying for actively managed funds — the "MER / fee drag" input in section 11 is a direct, compounding cost, and lower is almost always better, all else equal.</li>
+        </ol>
+      </section>
+      <section class="module">
+        <h2>Where passive income typically comes from</h2>
+        <ul class="guide-list">
+          <li><b>Broad index mutual funds / ETFs.</b> Low-cost, diversified exposure to stocks or bonds without picking individual companies — usually the core building block for most of a portfolio, at any age. The "MER / fee drag" input in section 11 is exactly this: index funds tend to have a much lower fee than actively managed funds, and that difference compounds over decades.</li>
+          <li><b>Dividend-paying stocks or dividend-focused funds.</b> Shares in companies that regularly pay out a portion of profit to shareholders — a source of cash income you can spend without necessarily selling the underlying shares, though dividends aren't guaranteed and can be cut.</li>
+          <li><b>Bonds and GICs / term deposits.</b> You lend money (to a government, a company, or a bank) for a set return, generally steadier and less volatile than stocks, and typically the "ballast" that increases as a glide path gets closer to retirement.</li>
+          <li><b>REITs (real estate investment trusts).</b> A way to get rental-property-style income and exposure without directly owning and managing a building yourself.</li>
+          <li><b>Precious metals (e.g., gold).</b> Usually held as a small diversifier (commonly cited examples are in the 5–10% range) rather than a core holding — it doesn't pay income and its price can be volatile too, but it doesn't move in the same direction as stocks and bonds in every environment, which is the main reason people hold a little.</li>
+          <li><b>An emergency/cash buffer.</b> Not really an "investment," but the thing that keeps a bad year from turning into a forced bad decision — this is what the last row of the glide path table above is really describing.</li>
+        </ul>
+      </section>
+      <section class="module">
+        <h2>Making "$/year" feel real: worked examples</h2>
+        <p class="lead">A yearly savings number is easy to write down and easy to ignore. Breaking it into a weekly or monthly amount is often what actually changes behavior — it's the same money, just sized to how people actually think about spending.</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>If you're saving, per year</th><th>That's, per month</th><th>That's, per week</th></tr></thead>
+          <tbody>
+            <tr><td>$6,000</td><td>$500</td><td>≈$115</td></tr>
+            <tr><td>$12,000</td><td>$1,000</td><td>≈$231</td></tr>
+            <tr><td>$24,000</td><td>$2,000</td><td>≈$462</td></tr>
+            <tr><td>$36,000</td><td>$3,000</td><td>≈$692</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="lead">Your own report (section 14, and the printed copy) shows your actual "intended contributions" input converted into weekly and monthly terms the same way, and — if the plan shows a funding gap — a rough weekly figure for how much extra it would take to close it. Treat that number as a planning anchor to sanity-check against your real budget, not a precise prescription.</p>
+      </section>
+    </div>
+
+    <div id="guideGlossary" style="display:none">
+      <section class="module">
+        <h2>Glossary — every term in this tool, in plain language</h2>
+        <p class="lead">Terms are grouped by the section they appear in. If you're not sure what an input means, you can also just hover the label text in the form itself — most labels already explain themselves with an example in parentheses.</p>
+      </section>
+      <section class="module">
+        <h2>General</h2>
+        <dl class="glossary">
+          <dt>Stylized</dt><dd>Simplified for planning purposes — the shape of a real-world rule (like progressive tax, or pension clawback), not the exact legal formula. Always double check anything stylized against your real tax return, pension statement, or insurance policy.</dd>
+          <dt>Base case</dt><dd>Your plan using the "normal", expected numbers you typed in — no bad-luck scenario applied.</dd>
+          <dt>Stress test</dt><dd>The same plan, but assuming worse investment returns for your first 10 years of retirement and faster healthcare inflation the whole way through. This tells you your margin of safety, not a prediction.</dd>
+          <dt>Sequence-of-returns risk</dt><dd>The danger that a few bad investment years right after you stop working do far more damage than the same bad years spread evenly across your whole retirement — because you're withdrawing money at the same time the balance is down.</dd>
+          <dt>Withdrawal, "grossed up"</dt><dd>When you withdraw money from an account to cover a cost, you may also owe tax on that withdrawal. "Grossing up" means withdrawing a bit extra so that after tax, you still have enough left to cover the actual cost.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Investing basics (see the "Investing basics" tab for the full explanation)</h2>
+        <dl class="glossary">
+          <dt>Glide path</dt><dd>The general idea of gradually shifting a portfolio from more growth-oriented assets (stocks) toward steadier, income-producing ones (bonds, cash) as you get closer to needing the money.</dd>
+          <dt>Dividend</dt><dd>A cash payment some companies make to shareholders out of profit — a source of income from stocks without necessarily selling them. Not guaranteed, and can be reduced or stopped.</dd>
+          <dt>REIT</dt><dd>Real estate investment trust — a way to invest in rental-style real estate income through a fund, rather than buying and managing a property directly.</dd>
+          <dt>GIC / term deposit</dt><dd>A guaranteed-return account for a fixed term, generally steadier than stocks — used as "ballast" in a portfolio, more of it as retirement gets closer.</dd>
+          <dt>Precious metals</dt><dd>Physical assets like gold, sometimes held as a small diversifier because they don't reliably move in the same direction as stocks and bonds — not an income-producing asset on its own.</dd>
+          <dt>Emergency fund</dt><dd>Cash kept in a plain savings account — not invested — specifically to cover a car repair, a home repair, or a job gap without having to sell investments at a bad time or reach for high-APR debt. The target amount grows as you get older, per the table in "Investing basics."</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Section 1 — Household &amp; currency</h2>
+        <dl class="glossary">
+          <dt>City cost band</dt><dd>A multiplier applied to your everyday and discretionary spending based on how expensive the city you'll retire in is. It does not change your housing or healthcare numbers — those should already reflect your specific city.</dd>
+          <dt>Need rule</dt><dd>How the tool decides what you need each year: only the specific costs you typed in ("buckets"), a number based on your current take-home pay ("salary path"), or whichever of the two is higher.</dd>
+          <dt>Lifestyle inflation</dt><dd>How much your everyday spending tends to grow each year beyond general inflation — people's living standards usually creep up faster than the official inflation rate.</dd>
+          <dt>Exchange rate / FX drift</dt><dd>Only relevant if you'll spend money in a different currency than your investment accounts are held in. "FX drift" is your guess at how that exchange rate will change over time.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Section 2 — Job, layoff risk, disability</h2>
+        <dl class="glossary">
+          <dt>Job-loss hazard</dt><dd>Your estimated yearly chance of losing your job. In this tool it's modeled as low early in a career, then climbing after a "turning-point age" — most fields see rising risk with age, not constant risk.</dd>
+          <dt>Turning-point age</dt><dd>The age this tool assumes your job-loss risk starts climbing for your profession.</dd>
+          <dt>Hazard cap</dt><dd>The most that yearly risk can ever reach in the model — a ceiling, so the number never becomes unrealistic.</dd>
+          <dt>Guaranteed shock</dt><dd>A one-time, deliberate "what if" event you add on top of the yearly risk — e.g. "what if I'm definitely laid off at 58 for 2 years" — used to stress-test a specific worry, not part of your everyday baseline.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Section 3 — Partner &amp; survivor</h2>
+        <dl class="glossary">
+          <dt>Cost-of-living stay-factor</dt><dd>The share of household costs that remain once only one of you is still earning. Most of a household's fixed costs (the house, insurance, one car) don't disappear just because one income does.</dd>
+          <dt>Survivor path</dt><dd>An optional scenario where one partner is assumed to pass away at a chosen age, so you can check whether the survivor still has enough — with less pension income but nearly the same living costs.</dd>
+          <dt>Pension / cost-of-living "keep-factor"</dt><dd>The share of a pension, or of household costs, that continues for the surviving partner after the other passes away.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Sections 4–7 — Kids, parents, gifts, pets</h2>
+        <dl class="glossary">
+          <dt>Independence age</dt><dd>The age you assume a child stops being a day-to-day financial dependent (though tuition and "after-help" can still continue past this age).</dd>
+          <dt>Education program preset</dt><dd>A typical tuition-and-duration package for a type of education (public college at home, public college away, private college, business school, medical school, law school, graduate school, trade certificate). These are stylized planning anchors, not your specific school's actual cost — edit the tuition/dates after picking one if you know your real numbers.</dd>
+          <dt>Registered education plan</dt><dd>A tax-advantaged account for education savings (RESP in Canada, 529 in the US, Junior ISA in the UK, and similar in other countries) — often with government matching money on top of your own contributions, which is why the tool flags it if you have tuition costs but aren't using one.</dd>
+          <dt>Education pot</dt><dd>A dedicated education savings account (RESP, 529 or similar). Tuition costs are paid from this account first; only the amount it can't cover shows up as a hit to your regular household cashflow.</dd>
+          <dt>Eldercare</dt><dd>Money you pay to support a parent, modeled as continuing until a chosen parent age (their expected end of that support, whether that's full facility care or passing).</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Section 16 — Your roadmap</h2>
+        <dl class="glossary">
+          <dt>Checkpoint</dt><dd>A specific age the roadmap calls out, either because five years have passed since the last checkpoint, or because something in your plan actually changes that year (tuition starting/ending, a debt getting paid off, a modeled shock beginning or ending, and so on).</dd>
+          <dt>On-track / ahead / behind</dt><dd>A rough comparison between your projected account balance at that checkpoint and a simple straight-line target from today's balance to what you'll need at your stop-work age. It's a directional signal, not a precise verdict — small gaps are normal and not a reason to panic.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Section 8 — Debt</h2>
+        <dl class="glossary">
+          <dt>APR</dt><dd>Annual Percentage Rate — the yearly interest rate charged on a debt's balance (0.045 = 4.5% per year).</dd>
+          <dt>Amortizing</dt><dd>A debt is "amortizing" if your yearly payment is more than that year's interest, so the balance actually shrinks over time. If a payment is less than or equal to the interest, the balance grows instead — the tool flags this.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Sections 11–13 — Accounts, tax, living costs</h2>
+        <dl class="glossary">
+          <dt>MER (fee drag)</dt><dd>The yearly percentage your investment provider charges in fees, which reduces your actual investment return by that amount every year.</dd>
+          <dt>Contribution room</dt><dd>How much you're typically allowed to put into a tax-sheltered account per year in a given country. Money beyond this room usually goes into an ordinary taxable account instead, which is taxed differently.</dd>
+          <dt>Progressive tax bands</dt><dd>A tax system where your income is taxed in slices, at increasing rates as each slice is crossed — not one flat rate on your whole income.</dd>
+          <dt>Pension clawback</dt><dd>A rule (used in some countries, e.g. Canada's OAS) where your public pension is reduced once your income passes a threshold.</dd>
+          <dt>Healthcare-premium surcharge (IRMAA-style)</dt><dd>A rule (used in the US, tied to Medicare) where your healthcare premiums increase once your income crosses certain thresholds.</dd>
+          <dt>Long-term care (LTC)</dt><dd>A period of full-time paid care later in life — typically the largest and least predictable healthcare-related cost a household can face.</dd>
+        </dl>
+      </section>
+      <section class="module">
+        <h2>Section 14 — Your result</h2>
+        <dl class="glossary">
+          <dt>Verdict</dt><dd>A one-sentence plain-English summary of whether your plan holds up, and the single biggest reason if it doesn't.</dd>
+          <dt>Flags</dt><dd>Specific, individually actionable problems the simulation noticed — e.g. a non-amortizing credit card, or a child's costs still running after you retire.</dd>
+          <dt>Money runs out at age</dt><dd>The first age, after both of you have stopped working, that your account balance would reach zero under the base case.</dd>
+        </dl>
+      </section>
+    </div>
+  </div><!-- /panelGuide -->
+
+  <footer>RetireCompass <span id="versionBadgeFooter"></span> · © <span id="copyrightYear"></span> Rajeev Yadav · Compass family · Decision-support only, not financial advice</footer>
+</div>
+
+<!-- Floating scroll-to-top control. Screen-only (hidden entirely in print). -->
+<button type="button" id="scrollTopBtn" class="scroll-top" aria-label="Scroll to top">↑ Top</button>
+
+<!-- Print-only running header/footer. These are display:none on screen and
+     only appear in @media print (see styles.css), where they're pinned to
+     a fixed position so they repeat on every printed/PDF page. -->
+<div class="print-header">RetireCompass — Household Retirement Plan · <span id="printLabel"></span></div>
+<div class="print-footer">© <span id="copyrightYearFooter"></span> Rajeev Yadav · RetireCompass v<span id="printVersion"></span> · Decision-support only — not tax, legal or investment advice · Printed <span id="printDate"></span></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

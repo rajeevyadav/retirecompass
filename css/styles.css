@@ -1,0 +1,249 @@
+:root {
+  --navy: #1b3a4b;
+  --teal: #0e7c7b;
+  --gold: #c9a227;
+  --cream: #f7f3e9;
+  --ink: #1f2933;
+  --muted: #5c6b73;
+  --line: #d7dee3;
+  --bg: #f4f6f7;
+  --card: #ffffff;
+  --warn: #9b2c2c;
+  --ok: #276749;
+  --amber: #b7791f;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", Calibri, system-ui, sans-serif; }
+header.app {
+  background: var(--navy); color: #fff; padding: 1rem 1.25rem;
+  display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between;
+}
+header.app h1 { margin: 0; font-size: 1.35rem; letter-spacing: .02em; }
+header.app .tag { opacity: .85; font-size: .85rem; }
+.toolbar { display: flex; gap: .5rem; flex-wrap: wrap; }
+button, .btn {
+  border: 0; background: var(--teal); color: #fff; padding: .45rem .8rem;
+  border-radius: 6px; cursor: pointer; font-weight: 600;
+}
+header.app button.ghost { background: transparent; border: 1px solid #ffffff55; color: #fff; }
+.module button.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 1rem 1.1rem 4rem; }
+.disclaimer {
+  background: #fff3cd; color: #5c4800; border: 1px solid #e6d089; padding: .7rem 1rem;
+  border-radius: 8px; margin: 1rem 0; font-size: .9rem;
+}
+.seg { display: flex; gap: .35rem; flex-wrap: wrap; margin: .6rem 0 1rem; }
+.seg button { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.seg button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.module {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 1rem 1.1rem; margin: 1rem 0;
+}
+.module h2 { margin: 0 0 .35rem; font-size: 1.15rem; color: var(--teal); }
+.module p.lead { margin: 0 0 1rem; color: var(--muted); font-size: .92rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .7rem 1rem; }
+label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: .15rem; }
+input, select, textarea {
+  width: 100%; padding: .45rem .5rem; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink);
+}
+input[readonly] { background: var(--cream); cursor: not-allowed; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th, td { border-bottom: 1px solid var(--line); padding: .4rem .35rem; text-align: left; }
+th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .6rem; }
+.kpi { background: var(--cream); border-radius: 8px; padding: .7rem .8rem; }
+.kpi b { display: block; font-size: 1.15rem; }
+.kpi span { font-size: .75rem; color: var(--muted); }
+.verdict { padding: .8rem 1rem; border-radius: 8px; font-weight: 700; margin: .8rem 0; }
+.verdict.ok { background: #c6f6d5; color: #22543d; }
+.verdict.bad { background: #fed7d7; color: #822727; }
+.verdict.warn { background: #feebc8; color: #7b341e; }
+.flag { display: inline-block; padding: .1rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+.flag.red { background: #fed7d7; color: #822727; }
+.flag.amber { background: #feebc8; color: #7b341e; }
+.flag.green { background: #c6f6d5; color: #22543d; }
+.row-actions { margin-top: .6rem; display: flex; gap: .4rem; flex-wrap: wrap; }
+#yearTable wrap, .scroll { overflow: auto; max-height: 420px; }
+footer { color: var(--muted); font-size: .8rem; margin-top: 2rem; }
+@media print {
+  header.app .toolbar, .seg, button, .row-actions { display: none !important; }
+  .module { break-inside: avoid; }
+  .scroll { max-height: none !important; overflow: visible !important; }
+
+  /* Tight print margins; the running header/footer below live inside this
+     margin band so they repeat on every page without eating into content
+     width. */
+  @page { size: auto; margin: 14mm 10mm 16mm; }
+
+  body { background: #fff; color: #000; font-size: 10.5pt; }
+  header.app { background: #fff !important; color: #000 !important; padding: 0 0 .4rem; border-bottom: 2px solid #000; }
+  header.app .tag { color: #333; }
+  .module { border: 1px solid #ccc; background: #fff; }
+  .module h2 { color: #000; }
+  .disclaimer { background: #fff !important; border: 1px solid #000; color: #000; }
+  .kpi { background: #f2f2f2; }
+  .verdict.ok { background: #e6f4ea; color: #000; }
+  .verdict.bad { background: #fbe4e4; color: #000; }
+  .verdict.warn { background: #fdf1de; color: #000; }
+  a[href]:after { content: "" !important; }
+
+  .print-header, .print-footer { display: block !important; position: fixed; left: 0; right: 0; font-size: 8.5pt; color: #444; }
+  .print-header { top: 0; text-align: left; border-bottom: 1px solid #999; padding-bottom: 3px; }
+  .print-footer { bottom: 0; text-align: center; border-top: 1px solid #999; padding-top: 3px; }
+  footer { display: none; }
+}
+.acct-note { font-size: .85rem; color: var(--muted); background: var(--cream); border-radius: 8px; padding: .6rem .8rem; }
+.acct-note b { color: var(--ink); }
+
+.version-badge {
+  font-size: .68rem; font-weight: 600; letter-spacing: .03em; color: #fff;
+  background: #ffffff2a; border: 1px solid #ffffff55; border-radius: 999px;
+  padding: .1rem .5rem; vertical-align: middle; margin-left: .4rem;
+}
+
+/* Print-only running header/footer: invisible on screen, only shown inside
+   @media print above (as position:fixed, so it repeats on every page). */
+.print-header, .print-footer { display: none; }
+
+.scroll-top {
+  position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 50;
+  background: var(--teal); color: #fff; border: 0; border-radius: 999px;
+  padding: .55rem .9rem; font-weight: 700; font-size: .8rem; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  opacity: 0; pointer-events: none; transform: translateY(8px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+.scroll-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+@media print { .scroll-top { display: none !important; } }
+
+/* ===========================================================================
+   MOBILE RESPONSIVENESS
+   The form has 15 sections and several data tables; on a phone the fixed
+   220px-minimum grid columns and full-width tables were overflowing the
+   viewport instead of stacking/scrolling. This section makes every input
+   grid collapse to one column, every table scroll horizontally inside its
+   own box instead of squeezing the whole page, and touch targets (buttons,
+   inputs) large enough to tap reliably.
+   =========================================================================== */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media print { .table-wrap { overflow: visible !important; } }
+
+@media (max-width: 720px) {
+  header.app { padding: .75rem .85rem; flex-direction: column; align-items: flex-start; }
+  header.app h1 { font-size: 1.15rem; }
+  header.app .tag { font-size: .78rem; }
+  .toolbar { width: 100%; }
+  .toolbar button { flex: 1 1 auto; font-size: .82rem; padding: .55rem .6rem; }
+  .wrap { padding: .8rem .65rem 4.5rem; }
+  .module { padding: .85rem .8rem; margin: .75rem 0; }
+  .module h2 { font-size: 1rem; }
+  .grid { grid-template-columns: 1fr; gap: .6rem; }
+  input, select, textarea { font-size: 16px; padding: .55rem .6rem; } /* 16px avoids iOS auto-zoom-on-focus */
+  table { font-size: .78rem; }
+  th, td { padding: .35rem .3rem; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .scroll-top { right: .7rem; bottom: .7rem; padding: .5rem .75rem; font-size: .75rem; }
+}
+@media (max-width: 420px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  header.app h1 { font-size: 1.05rem; }
+}
+
+/* ===========================================================================
+   TABS (Plan vs. Guide, and the Guide's own Why/Manual/Glossary sub-tabs)
+   =========================================================================== */
+#mainTabs { margin-bottom: 1rem; }
+#mainTabs button, #guideTabs button { font-size: .85rem; }
+.guide-list { padding-left: 1.2rem; }
+.guide-list li { margin-bottom: .7rem; line-height: 1.55; }
+dl.glossary { margin: 0; }
+dl.glossary dt { font-weight: 700; color: var(--teal); margin-top: .7rem; }
+dl.glossary dt:first-child { margin-top: 0; }
+dl.glossary dd { margin: .15rem 0 0; color: var(--muted); line-height: 1.5; }
+@media print {
+  #mainTabs, #guideTabs { display: none !important; }
+  #panelGuide { display: none !important; }
+}
+
+/* ===========================================================================
+   REPORT (section "Your result" → #report) internal structure
+   =========================================================================== */
+#report h3 { margin: 0 0 .3rem; color: var(--teal); }
+#report h4 { margin: 1.1rem 0 .4rem; font-size: .95rem; color: var(--ink); border-top: 1px solid var(--line); padding-top: .8rem; }
+#report .report-section { margin-bottom: .6rem; }
+#report .report-section h4 { margin: 1rem 0 .3rem; font-size: .88rem; color: var(--teal); border-top: 0; padding-top: 0; }
+.report-table { width: 100%; margin-bottom: .3rem; }
+.report-table td:first-child { color: var(--muted); width: 60%; }
+.report-table td:last-child { font-weight: 600; }
+.report-rows { font-size: .85rem; color: var(--muted); line-height: 1.6; margin: .2rem 0 0; }
+@media print { #report .report-section, #report h4 { break-inside: avoid; } }
+
+/* ===========================================================================
+   ROADMAP (section 16, and its copy inside the report)
+   =========================================================================== */
+.roadmap-item { border-left: 3px solid var(--teal); padding: .4rem 0 .4rem .8rem; margin-bottom: .6rem; }
+.roadmap-item b { display: block; font-size: .85rem; color: var(--teal); margin-bottom: .15rem; }
+.roadmap-item ul { margin: 0; padding-left: 1.1rem; }
+.roadmap-item li { margin-bottom: .2rem; line-height: 1.5; font-size: .92rem; }
+@media print { .roadmap-item { break-inside: avoid; border-left-color: #000; } .roadmap-item b { color: #000; } }
+
+/* ===========================================================================
+   CHARTS (section 14: balance-over-time line chart, expense-mix bar chart)
+   =========================================================================== */
+.chart-heading { margin: 1.2rem 0 .5rem; font-size: .95rem; color: var(--ink); border-top: 1px solid var(--line); padding-top: .9rem; }
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-legend { display: flex; gap: 1.2rem; font-size: .78rem; color: var(--muted); margin-top: .3rem; flex-wrap: wrap; }
+.chart-legend span { display: flex; align-items: center; gap: .35rem; }
+.chart-legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; }
+.bar-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; font-size: .85rem; }
+.bar-label { width: 42%; max-width: 220px; color: var(--muted); flex-shrink: 0; }
+.bar-track { flex: 1; background: var(--bg); border-radius: 5px; overflow: hidden; height: 15px; border: 1px solid var(--line); }
+.bar-fill { height: 100%; background: var(--teal); }
+.bar-val { width: 110px; text-align: right; font-weight: 600; flex-shrink: 0; }
+@media (max-width: 640px) {
+  .bar-row { flex-wrap: wrap; }
+  .bar-label { width: 100%; }
+  .bar-track { flex: 1 1 auto; order: 2; }
+  .bar-val { order: 3; width: auto; }
+}
+@media print {
+  .chart-svg text { fill: #000 !important; }
+  .chart-svg line[stroke="var(--line)"] { stroke: #ccc !important; }
+  .bar-track { border-color: #999; }
+}
+
+/* ============================================================================
+   Responsive (mobile) + print. Light theme only.
+   ========================================================================== */
+.chart-svg { width: 100%; height: auto; display: block; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 720px) {
+  .wrap { padding: .7rem .55rem 3rem; }
+  header.app { padding: .8rem .9rem; gap: .5rem; }
+  header.app h1 { font-size: 1.15rem; }
+  header.app .tag { font-size: .8rem; }
+  .toolbar { width: 100%; }
+  .module { padding: .85rem .8rem; }
+  .grid { grid-template-columns: 1fr; }
+  /* Wide charts stay legible on a phone: scroll horizontally instead of
+     shrinking the labels into nothing. */
+  #balanceChart, #mixBars { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #balanceChart .chart-svg { min-width: 560px; }
+  /* Wide tables scroll within their own area rather than breaking the layout. */
+  .report-table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+/* Clean, professional Print / PDF report. */
+@media print {
+  header.app .toolbar, #mainTabs, .seg, button, .btn { display: none !important; }
+  header.app { background: #1b3a4b !important; color: #fff !important;
+               -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff; color: #000; }
+  .wrap { max-width: 100%; padding: .5rem 0; }
+  .module { border: 1px solid #ccc; box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+  .module h2 { color: #0e7c7b; }
+  .chart-svg, .report-table, .chart-legend { break-inside: avoid; page-break-inside: avoid; }
+  .disclaimer { border: 1px solid #e6d089; }
+}
