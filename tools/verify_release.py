@@ -20,6 +20,14 @@ from hashlib import sha256
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+_BINARY_SUFFIX = {".png", ".ico", ".jpg", ".jpeg", ".gif", ".pdf", ".zip", ".gz", ".woff", ".woff2"}
+
+
+def hash_file(path: Path) -> str:
+    data = path.read_bytes()
+    if path.suffix.lower() not in _BINARY_SUFFIX:
+        data = data.replace(b"\r\n", b"\n")
+    return sha256(data).hexdigest()
 
 
 def run(cmd):
@@ -64,7 +72,7 @@ def manifest_scan():
         p = ROOT / rel
         if not p.is_file():
             raise SystemExit(f"Manifest references missing file: {rel}")
-        if sha256(p.read_bytes()).hexdigest() != expected:
+        if hash_file(p) != expected:
             raise SystemExit(f"SHA-256 mismatch: {rel}")
         entries[rel] = expected
     tracked = {r for r in subprocess.check_output(["git", "ls-files"], cwd=str(ROOT)).decode().splitlines()
