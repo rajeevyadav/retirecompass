@@ -5,6 +5,11 @@
 __pycache__/
 *.pyc
 
+# Dev-only test dependency (jsdom for tests/scenario_engine.js); installed
+# with `npm install --no-save jsdom`, never shipped and never part of a release.
+/node_modules/
+package-lock.json
+
 # Local env / editor
 .env
 .venv/

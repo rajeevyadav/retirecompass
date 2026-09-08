@@ -10,8 +10,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: Install test dependency
-        run: pip install pytest
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install test dependencies
+        run: |
+          pip install pytest
+          # Honour the jsdom version pinned in package.json (^24) — the
+          # scenario suite relies on jsdom 24's DOM-load timing, and a
+          # bare `npm install jsdom` would pull a newer major that breaks it.
+          npm install
       - name: Syntax check the app JavaScript
         run: node --check js/app.js
       - name: Run guard tests

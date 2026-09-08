@@ -1,9 +1,9 @@
 43fc0016f886737146a8b273ec3ab22554c0e4e44ee4abadbf9377be0f8d5fca  ./.gitattributes
 08114bb9ae1b5f8e367bf8644cf119ea671cfbb20b66d5e56786c6ac2c2c53bb  ./.github/workflows/build-packages.yml
-3e9900ab2122574ed1c8085332e68cbc1e5b755031ee72be6800118a40dbff59  ./.github/workflows/ci.yml
+69fabc33b042e18fdc8a2956deafd7385f687e51147fad1ad07d8efe2e6f0008  ./.github/workflows/ci.yml
 f2998e1e9e2a81713b02431b881f52389670742e9d3875ea0e72975095944a31  ./.github/workflows/pages.yml
 674b7ebd58a63f54ff40a1ae6dd6991ee5080e5e9fb60cd4e102d351c41b72d5  ./.github/workflows/restricted-folders-guard.yml
-e90758642a13406f35b70393d5355c5e0bbca1dd1d26774d649d286bef0c5c88  ./.gitignore
+e0dc026baf374ee9b2b6f90fd5a92755ed5e38ee53d0e016a09764c58f7e7eec  ./.gitignore
 b42dfe8120b1af97a995138dc4a3140698981da92e406368dce0adbf0164cf2f  ./LICENSE
 0e4b760bb97824df529a3ea5b8c0c639c73a635425e865dfea3758a3736796d3  ./PRIVACY.md
 b6df0eced8e4fa6db5859111aa8a5890d624ff8f73ae29fb5e95a632c5635150  ./README.md
