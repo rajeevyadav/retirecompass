@@ -30,7 +30,10 @@ jobs:
         run: |
           VERSION_FLAG=""
           if [ "${{ matrix.label }}" = "windows" ]; then VERSION_FLAG="--version-file version_info.txt"; fi
-          pyinstaller --noconfirm --clean --onefile --name RetireCompass $VERSION_FLAG \
+          # One-folder (not --onefile) build: a onefile exe self-extracts a
+          # Python runtime to a temp dir at launch, which Windows Defender/
+          # SmartScreen heuristics routinely false-flag on an unsigned binary.
+          pyinstaller --noconfirm --clean --onedir --name RetireCompass $VERSION_FLAG \
             --add-data "index.html${SEP}." \
             --add-data "css${SEP}css" \
             --add-data "js${SEP}js" \
@@ -40,11 +43,13 @@ jobs:
       - name: Package artifact
         shell: bash
         run: |
+          # One-folder build: package the whole dist/RetireCompass directory
+          # (the executable plus its _internal runtime), not a single file.
           cd dist
           case "${{ matrix.label }}" in
-            windows) 7z a "../RetireCompass-windows.zip" RetireCompass.exe ;;
-            macos)   zip "../RetireCompass-macos.zip" RetireCompass ;;
-            linux)   chmod +x RetireCompass && tar -czf "../RetireCompass-linux.tar.gz" RetireCompass ;;
+            windows) 7z a "../RetireCompass-windows.zip" RetireCompass ;;
+            macos)   zip -r "../RetireCompass-macos.zip" RetireCompass ;;
+            linux)   chmod +x RetireCompass/RetireCompass && tar -czf "../RetireCompass-linux.tar.gz" RetireCompass ;;
           esac
       - uses: actions/upload-artifact@v4
         with:
