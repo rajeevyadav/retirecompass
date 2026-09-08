@@ -97,6 +97,8 @@
     <h2>3. Partner, and planning for one of you passing away first</h2>
     <div class="grid">
       <div><label>Do you have a partner to include in this plan?</label><select id="partnerOn"><option>YES</option><option>NO</option></select></div>
+    </div>
+    <div class="grid" id="partnerFields" style="margin-top:.7rem">
       <div><label>Partner's age today</label><input id="pAge" type="number" value="47"></div>
       <div><label>Age your partner plans to stop working</label><input id="pRet" type="number" value="63"></div>
       <div><label>Partner's salary today</label><input id="pInc" type="number" value="72000"></div>
@@ -104,16 +106,17 @@
       <div><label>Age partner's pension starts</label><input id="pPubAge" type="number" value="65"></div>
       <div><label>Share of household costs that remain once only one of you is still working (0.85 = 85% of costs remain — most of the house is still there)</label><input id="pColStay" type="number" step="0.05" value="0.85"></div>
       <div><label>Plan for one of you passing away before the other?</label><select id="survOn"><option>NO</option><option>YES</option></select></div>
-      <div><label>Who is assumed to pass away first</label><select id="survWho"><option>partner</option><option>you</option></select></div>
-      <div><label>Age that person is expected to pass away</label><input id="survAge" type="number" value="78"></div>
-      <div><label>Share of that person's pension the survivor keeps afterward (0.60 = 60%)</label><input id="survPen" type="number" step="0.05" value="0.60"></div>
-      <div><label>Share of household costs the survivor still has afterward (0.75 = 75% — living alone doesn't halve your bills)</label><input id="survCol" type="number" step="0.05" value="0.75"></div>
+      <div class="surv-dep"><label>Who is assumed to pass away first</label><select id="survWho"><option>partner</option><option>you</option></select></div>
+      <div class="surv-dep"><label>Age that person is expected to pass away</label><input id="survAge" type="number" value="78"></div>
+      <div class="surv-dep"><label>Share of that person's pension the survivor keeps afterward (0.60 = 60%)</label><input id="survPen" type="number" step="0.05" value="0.60"></div>
+      <div class="surv-dep"><label>Share of household costs the survivor still has afterward (0.75 = 75% — living alone doesn't halve your bills)</label><input id="survCol" type="number" step="0.05" value="0.75"></div>
     </div>
+    <p class="lead" id="noPartnerNote" style="display:none">No partner is included in this plan — the survivor path and the fields above don't apply and are hidden. Set "Do you have a partner?" to YES to plan for one.</p>
   </section>
 
   <section class="module">
     <h2>4. Kids — while dependent, through school, and after independence</h2>
-    <p class="lead">"Indep." is the age each child becomes financially independent. Pick an "Education program" to load a realistic typical tuition and duration — medical school costs nothing like a public college lived at home, and both are edited below the preset if your real numbers differ. "After-help" is money you keep sending after independence (rent top-ups, etc.) and "Until" is the age that stops. "They pay you" is any money an adult child sends back to you each year (rent, family support) starting from the independence age. <b>No children? Leave this table empty</b> — single, divorced-with-no-kids, and child-free households are all completely normal here; nothing else in the plan requires a row in this table.</p>
+    <p class="lead">"Indep." is the age each child becomes financially independent. Pick an "Education program" to load a realistic typical tuition and duration — medical school costs nothing like a public college lived at home, and both are edited below the preset if your real numbers differ. "After-help" is money you keep sending after independence (rent top-ups, etc.) and "Help stops at age" is when that ends. <b>Every "age X" end-point in this table means "the last year this cost is counted is X−1" — at age X itself, the cost has already stopped.</b> "They pay you" is any money an adult child sends back to you each year (rent, family support) starting from the independence age. <b>No children? Leave this table empty</b> — single, divorced-with-no-kids, and child-free households are all completely normal here; nothing else in the plan requires a row in this table.</p>
     <div class="scroll">
       <table>
         <thead><tr>
@@ -158,10 +161,10 @@
 
   <section class="module">
     <h2>7. Pets</h2>
-    <p class="lead">Food, grooming, insurance and routine vet care for each pet, plus a rough vet-cost cushion for the unplanned stuff. "Ends at your age" is simply when you expect that cost to stop (the pet's expected lifespan) — add another row later if you plan to get a new pet.</p>
+    <p class="lead">Food, grooming, insurance and routine vet care for each pet, plus a rough vet-cost cushion for the unplanned stuff. "Ends at your age" means the last year this cost is counted is one year <i>before</i> the age you enter (e.g. entering 78 means age 77 is the last year it's included, age 78 itself is already cost-free) — add another row later if you plan to get a new pet.</p>
     <div class="table-wrap">
     <table>
-      <thead><tr><th>Pet name</th><th>Food/grooming/insurance $/yr</th><th>Routine + unplanned vet $/yr</th><th>Ends at your age</th><th></th></tr></thead>
+      <thead><tr><th>Pet name</th><th>Food/grooming/insurance $/yr</th><th>Routine + unplanned vet $/yr</th><th>Ends at your age (last year counted is one less)</th><th></th></tr></thead>
       <tbody id="petsBody"></tbody>
     </table>
     </div>
@@ -214,6 +217,9 @@
     <div class="grid" style="margin-top:.8rem">
       <div><label>Everything you have invested today, combined</label><input id="nest" type="number" value="380000"></div>
       <div><label>Emergency fund balance today (a real savings account — separate from the invested accounts above, and separate from your investments)</label><input id="emergFund" type="number" value="10000"></div>
+    </div>
+    <p class="lead" id="emergNote"></p>
+    <div class="grid" style="margin-top:.8rem">
       <div><label>Expected yearly investment growth while you're still working</label><input id="retAcc" type="number" step="0.001" value="0.065"></div>
       <div><label>Expected yearly investment growth after you retire (usually a bit more conservative)</label><input id="retRet" type="number" step="0.001" value="0.050"></div>
       <div><label>Yearly investment fees (as a %, this eats directly into your returns)</label><input id="mer" type="number" step="0.001" value="0.005"></div>
@@ -243,7 +249,7 @@
   <section class="module">
     <h2>13. Everyday living costs, pensions, and long-term care</h2>
     <div class="grid">
-      <div><label>Yearly housing costs today (property tax, insurance, maintenance, condo fees — after any mortgage is paid off, mortgage payments are tracked separately in section 7)</label><input id="house" type="number" value="9000"></div>
+      <div><label>Yearly housing costs today (property tax, insurance, maintenance, condo fees — after any mortgage is paid off, mortgage payments are tracked separately in section 8)</label><input id="house" type="number" value="9000"></div>
       <div><label>Yearly healthcare costs today (out-of-pocket expenses plus insurance premiums)</label><input id="health" type="number" value="4500"></div>
       <div><label>Yearly costs that disappear once you stop working (commuting, work clothes, lunches out)</label><input id="workOnly" type="number" value="4000"></div>
       <div><label>Your core everyday living costs today (food, utilities, day-to-day spending)</label><input id="core" type="number" value="42000"></div>
@@ -261,9 +267,9 @@
       <div><label>Yearly healthcare-cost inflation (usually runs above general inflation)</label><input id="infH" type="number" step="0.001" value="0.045"></div>
       <div><label>Yearly housing-cost inflation</label><input id="infHouse" type="number" step="0.001" value="0.040"></div>
       <div><label>Add a long-term-care period later in life (a nursing home or full-time care)?</label><select id="ltcOn"><option>YES</option><option>NO</option></select></div>
-      <div><label>Age that long-term-care period starts</label><input id="ltcAge" type="number" value="88"></div>
-      <div><label>How many years it lasts</label><input id="ltcYrs" type="number" value="3"></div>
-      <div><label>Extra yearly cost during that period, in today's dollars</label><input id="ltcCost" type="number" value="45000"></div>
+      <div class="ltc-dep"><label>Age that long-term-care period starts</label><input id="ltcAge" type="number" value="88"></div>
+      <div class="ltc-dep"><label>How many years it lasts</label><input id="ltcYrs" type="number" value="3"></div>
+      <div class="ltc-dep"><label>Extra yearly cost during that period, in today's dollars</label><input id="ltcCost" type="number" value="45000"></div>
       <div><label>Stress test: how much lower your investment returns are for the first 10 years of retirement, if markets are bad</label><input id="hair" type="number" step="0.005" value="0.03"></div>
       <div><label>Stress test: extra healthcare inflation on top of the normal rate above</label><input id="hcAdd" type="number" step="0.005" value="0.02"></div>
     </div>
@@ -569,6 +575,9 @@
 
 <!-- Floating scroll-to-top control. Screen-only (hidden entirely in print). -->
 <button type="button" id="scrollTopBtn" class="scroll-top" aria-label="Scroll to top">↑ Top</button>
+<!-- Floating Calculate control — always reachable without scrolling back to
+     the header, no matter how far down a 16-section form the person is. -->
+<button type="button" id="floatingCalc" class="floating-calc" aria-label="Calculate">Calculate</button>
 
 <!-- Print-only running header/footer. These are display:none on screen and
      only appear in @media print (see styles.css), where they're pinned to

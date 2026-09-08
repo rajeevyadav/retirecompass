@@ -117,6 +117,19 @@ footer { color: var(--muted); font-size: .8rem; margin-top: 2rem; }
 .scroll-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 @media print { .scroll-top { display: none !important; } }
 
+/* Floating Calculate button — always visible (not scroll-gated like the
+   "back to top" button above) so it's reachable from any section without
+   a long scroll back to the header toolbar. Sits just above scroll-top so
+   the two never overlap. */
+.floating-calc {
+  position: fixed; right: 1.1rem; bottom: 4.1rem; z-index: 51;
+  background: var(--gold); color: #1f2933; border: 0; border-radius: 999px;
+  padding: .6rem 1.1rem; font-weight: 700; font-size: .85rem; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+@media print { .floating-calc { display: none !important; } }
+@media (max-width: 720px) { .floating-calc { bottom: 3.6rem; right: .7rem; padding: .55rem .9rem; font-size: .78rem; } }
+
 /* ===========================================================================
    MOBILE RESPONSIVENESS
    The form has 15 sections and several data tables; on a phone the fixed

@@ -2,7 +2,7 @@
    RetireCompass — js/app.js
    =============================================================================
    Author: Rajeev Yadav
-   Version: 1.0.0
+   Version: 1.1.0
 
    WHAT THIS FILE IS
    ------------------
@@ -72,7 +72,7 @@
   /* Bump this whenever the calculation logic changes, so a saved/printed
      report can always be traced back to the engine version that produced
      it. Shown in the header badge and on every printed page footer. */
-  const APP_VERSION = "1.0.0";
+  const APP_VERSION = "1.1.0";
 
   /* ===========================================================================
      1. REFERENCE DATA
@@ -1074,6 +1074,25 @@
       badAgeOrder: (ageE <= ageR) || (ageR <= age0)
     };
 
+    // Invalid ages make every other number in this tool meaningless — a
+    // portfolio can appear to grow from a later age to an earlier one,
+    // depletion ages stop meaning anything, and so on. Rather than compute
+    // and display that nonsense next to a small warning easy to miss while
+    // skimming results, stop here entirely: blank every result, show only
+    // the error, and wait for the ages to be fixed.
+    if (flags.badAgeOrder) {
+      const v = $("verdict");
+      if (v) { v.className = "verdict bad"; v.textContent = "Check your ages — current age, stop-work age and plan-to age must be strictly increasing (e.g. 45 → 65 → 95). No results are calculated until this is fixed."; }
+      ["kpiNeed", "kpiNeed100", "kpiNest", "kpiEnd", "kpiBroke", "kpiTax", "kpiEmerg"].forEach((id) => setText(id, "—"));
+      if (has("flags")) $("flags").innerHTML = `<span class="flag red">Age order is invalid — fix current/stop-work/plan-to ages (section 1) before anything else here can be trusted.</span>`;
+      if (has("balanceChart")) $("balanceChart").innerHTML = "";
+      if (has("mixBars")) $("mixBars").innerHTML = "";
+      if (has("yearBody")) $("yearBody").innerHTML = "";
+      if (has("roadmap")) $("roadmap").innerHTML = "";
+      if (has("report")) $("report").innerHTML = `<p class="lead">Fix the age order in section 1 (current age &lt; stop-work age &lt; plan-to age) and click Calculate again — no report is generated from invalid ages.</p>`;
+      return;
+    }
+
     // -------------------------------------------------------------------
     // YEAR-BY-YEAR SIMULATION
     // For every year from today (t=0) to the plan-to age, work out exactly
@@ -1135,7 +1154,7 @@
       if (kidTuitionRaw > 0 && tuitionCash > 0) flags.eduExhausted = true;
       const kidNet = kidLiving + tuitionCash + kidAfter - kidPayback;
 
-      // --- Debt (section 7) ---
+      // --- Debt (section 8) ---
       let debtPay = 0;
       debtState.forEach((d) => {
         const step = amortizeYear(d);
@@ -1373,7 +1392,7 @@
         const gap = needAcct - netFixed;
         draw = gap <= 0 ? 0 : gap / Math.max(0.05, 1 - effRate);
       }
-      taxPaid = (workGross + fixed) * effRate + draw * effRate;
+      taxPaid = 0; // computed below, once the draw is capped to what's actually available
 
       // --- Same logic again, but for the stress-tested need (needAcctS) ---
       let contribS = 0, drawS = 0;
@@ -1418,14 +1437,41 @@
       // --- Home sale lump sum (section 9) ---
       const homeLump = homeOn && age === homeAge ? homeNet * ghouse : 0;
 
+      // --- Cap each draw at what the account can actually supply ---
+      // "draw" above is the THEORETICAL grossed-up withdrawal that would be
+      // needed to fully cover this year's need — it is not automatically
+      // limited by whether the account actually holds that much. Once an
+      // account is exhausted, the uncapped number keeps climbing forever
+      // (it's tracking an ever-growing unmet shortfall, not real cash
+      // leaving a real account). Left uncapped, that phantom number
+      // corrupted every downstream reconstruction that assumed "draw" was
+      // real money taken from a real balance — including the "accounts at
+      // stop-work" KPI, which could show a large positive figure years
+      // after the account had actually hit zero. Capping here makes "draw"
+      // mean what it says: money that actually came out of the account
+      // this year. "shortfall" tracks whatever the capped draw couldn't
+      // cover, so a plan that's already broken says so honestly instead of
+      // reporting an ever-larger number as if it were still being funded.
+      const availBase = Math.max(0, port);
+      const availS = Math.max(0, portStress);
+      const availBest = Math.max(0, portBest);
+      const actualDraw = Math.min(draw, availBase);
+      const actualDrawS = Math.min(drawS, availS);
+      const actualDrawBest = Math.min(drawBest, availBest);
+      const shortfall = draw - actualDraw;
+      const shortfallS = drawS - actualDrawS;
+      const shortfallBest = drawBest - actualDrawBest;
+      taxPaid = (workGross + fixed) * effRate + actualDraw * effRate;
+
       // --- Roll the portfolio forward one year, in all three scenarios ---
-      port = Math.max(0, (port - draw) * (1 + r) + contrib + homeLump);
-      portStress = Math.max(0, (portStress - drawS) * (1 + rS) + contribS + homeLump);
-      portBest = Math.max(0, (portBest - drawBest) * (1 + rBest) + contribBest + homeLump);
+      port = Math.max(0, (port - actualDraw) * (1 + r) + contrib + homeLump);
+      portStress = Math.max(0, (portStress - actualDrawS) * (1 + rS) + contribS + homeLump);
+      portBest = Math.max(0, (portBest - actualDrawBest) * (1 + rBest) + contribBest + homeLump);
 
       rows.push({
         t, age, youWork, pWork, need: needAcct, needS: needAcctS, needBest: needAcctBest, kidNet, petCost, parentCost, debtPay,
-        taxPaid, health: healthNow, house: houseNow, core: coreNow, draw, contrib, port, portStress, portBest,
+        taxPaid, health: healthNow, house: houseNow, core: coreNow, draw: actualDraw, drawS: actualDrawS, drawBest: actualDrawBest,
+        shortfall, shortfallS, shortfallBest, contrib, port, portStress, portBest,
         fixed, workGross, hYou, shockHit, disHit, eduPotBal, widowed
       });
     }
@@ -1435,11 +1481,31 @@
        --------------------------------------------------------------------- */
 
     const atRet = rows.find((r) => r.age === ageR) || rows[0];
+    // "Accounts at stop-work" should mean exactly that — the real balance
+    // the moment you stop working, i.e. the ending balance of the LAST
+    // working year. Reconstructing it as "this year's ending balance plus
+    // this year's draw" (the previous approach) quietly broke the moment a
+    // plan ran out of money before retirement even started: once an
+    // account has been at zero for years, "draw" no longer represents real
+    // money coming out of a real balance (see the draw-capping fix above),
+    // so adding it back invented a number that could look healthy years
+    // after the account was actually empty — exactly the kind of
+    // contradiction between the summary card, the chart and the
+    // year-by-year table that erodes trust in the whole tool. Reading the
+    // prior year's real ending balance instead is always correct, whether
+    // the plan is thriving or already broken.
+    const priorRet = rows.find((r) => r.age === ageR - 1) || atRet;
+    const stopWorkPort = priorRet.port, stopWorkPortS = priorRet.portStress, stopWorkPortBest = priorRet.portBest;
     const atEnd = rows.find((r) => r.age === ageE) || rows[rows.length - 1];
     const bothDone = (r) => !r.youWork && !r.pWork;
     // "broke" = the first year, after both partners have stopped working,
     // that the base-case portfolio hits zero.
     const broke = rows.find((r) => bothDone(r) && r.port <= 0);
+    // Total money the plan needed but genuinely couldn't supply, across the
+    // whole simulation — the honest number behind a "broke" verdict. Once
+    // an account is empty, the household's real-world need doesn't stop
+    // existing; this is what's left unfunded.
+    const totalShortfall = rows.reduce((sum, r) => sum + (r.shortfall || 0), 0);
     // "brokeS" = the same, but for the stress-tested portfolio.
     const brokeS = rows.find((r) => bothDone(r) && r.portStress <= 0);
     // "brokeBest" = same, for the best-case portfolio — included for
@@ -1452,7 +1518,7 @@
     // because it usually means the household needed to borrow or draw down
     // savings even before their planned stop-work date.
     const preBroke = rows.find((r) => (r.youWork || r.pWork) && r.port <= 0 && r.draw > 0);
-    const drawPct = atRet.port + atRet.draw > 0 ? atRet.draw / (atRet.port + atRet.draw) : 0;
+    const drawPct = stopWorkPort > 0 ? atRet.draw / stopWorkPort : 0;
 
     // --- Balance check: are we telling this household to over-save? ---
     // A tool with no product to sell has no reason to only warn about
@@ -1478,6 +1544,7 @@
     const row0 = rows[0];
     const recommendedEmergFund = row0 ? ((row0.core + row0.house + row0.health) / 12) * emergencyMonths(age0, ageR) : 0;
     const emergShort = recommendedEmergFund > 0 && emergFund < recommendedEmergFund * 0.9;
+    updateEmergNote();
 
     // --- Recurring/discretionary spending: worth a subscription audit? ---
     const discRatio = (youInc + pInc) > 0 ? (num("disc", 0)) / (youInc + pInc) : 0;
@@ -1499,7 +1566,7 @@
     let extraWeekly = 0;
     if ((broke || preBroke) && yearsToRet > 0) {
       const roughTargetNest = atRet.need / 0.04;
-      const shortfallAtRet = Math.max(0, roughTargetNest - (atRet.port + atRet.draw));
+      const shortfallAtRet = Math.max(0, roughTargetNest - stopWorkPort);
       const rr = Math.max(0.001, retAcc0 - mer);
       const fvFactor = (Math.pow(1 + rr, yearsToRet) - 1) / rr;
       const extraAnnual = fvFactor > 0 ? shortfallAtRet / fvFactor : 0;
@@ -1513,9 +1580,17 @@
     if ($("kpiNeed100") && $("kpiNeed100").previousElementSibling) {
       $("kpiNeed100").previousElementSibling.textContent = "What you'll need per year, at age " + ageE;
     }
-    setText("kpiNest", fmt(atRet.port + atRet.draw, ccy) + " (worst " + fmt(atRet.portStress + atRet.draw, ccy) + " · best " + fmt(atRet.portBest + atRet.draw, ccy) + ")");
+    setText("kpiNest", fmt(stopWorkPort, ccy) + " (worst " + fmt(stopWorkPortS, ccy) + " · best " + fmt(stopWorkPortBest, ccy) + ")");
     setText("kpiEnd", fmt(atEnd.port, ccy) + " (worst " + fmt(atEnd.portStress, ccy) + " · best " + fmt(atEnd.portBest, ccy) + ")");
-    setText("kpiBroke", broke ? String(broke.age) : (preBroke ? "Pre-retire hole @ " + preBroke.age : "Still funded"));
+    // "Money runs out" should always report the single, honest, earliest
+    // age the account actually hit zero — whether that happens before or
+    // after retirement — not prioritize the post-retirement check over an
+    // earlier pre-retirement one just because of which variable happened
+    // to be checked first. Reporting a later age when an earlier one is
+    // real is exactly the kind of contradiction that erodes trust in the
+    // rest of the numbers.
+    const trueBroke = rows.find((r) => r.port <= 0 && (r.draw > 0 || r.need > 0));
+    setText("kpiBroke", trueBroke ? (trueBroke.youWork || trueBroke.pWork ? "Pre-retire hole @ " + trueBroke.age : String(trueBroke.age)) : "Still funded");
     setText("kpiTax", fmt(atRet.taxPaid, ccy));
     setText("kpiEmerg", fmt(recommendedEmergFund, ccy) + (recommendedEmergFund > 0 ? " (" + emergencyMonths(age0, ageR) + " mo.)" : ""));
 
@@ -1569,6 +1644,7 @@
     if (debts.some((d) => d.type === "Credit card" && d.rate >= 0.15 && d.balance > 0))
       fl.push({ c: "red", t: "Unsecured debt ≥15% APR is a negative-return asset." });
     if (overSaving) fl.push({ c: "green", t: "You appear to be saving well beyond what this plan needs — see \"What to do next\" for what that might mean." });
+    if (totalShortfall > 0) fl.push({ c: "red", t: "Once the accounts run out, this plan is short " + fmt(totalShortfall, ccy) + " in total, across every remaining year — that gap doesn't disappear, it has to come from somewhere else (working longer, family support, or a lower standard of living)." });
     if (noGlidePath) fl.push({ c: "amber", t: "Retirement is within 10 years and your drawdown return assumption isn't meaningfully safer than your accumulation return — see \"Investing basics\" in the Guide tab." });
     if (emergShort) fl.push({ c: "amber", t: "Emergency fund (" + fmt(emergFund, ccy) + ") is below the age-based target (≈" + fmt(recommendedEmergFund, ccy) + ") — see \"What to do next\"." });
     if (highDisc) fl.push({ c: "amber", t: "Discretionary spending is a large share of income (" + pct(discRatio) + ") — a recurring-subscription audit is likely to find real money here." });
@@ -1636,9 +1712,9 @@
         <table class="report-table"><tbody>
           <tr><td>What you'll need per year, when you stop working</td><td>${fmt(atRet.need, ccy)}</td></tr>
           <tr><td>What you'll need per year, at age ${ageE}</td><td>${fmt(atEnd.need, ccy)}</td></tr>
-          <tr><td>What your accounts will hold when you stop working</td><td>${fmt(atRet.port + atRet.draw, ccy)} (worst ${fmt(atRet.portStress + atRet.draw, ccy)} · best ${fmt(atRet.portBest + atRet.draw, ccy)})</td></tr>
+          <tr><td>What your accounts will hold when you stop working</td><td>${fmt(stopWorkPort, ccy)} (worst ${fmt(stopWorkPortS, ccy)} · best ${fmt(stopWorkPortBest, ccy)})</td></tr>
           <tr><td>What your accounts will hold at age ${ageE}</td><td>${fmt(atEnd.port, ccy)} (worst ${fmt(atEnd.portStress, ccy)} · best ${fmt(atEnd.portBest, ccy)})</td></tr>
-          <tr><td>Age your money runs out (base case)</td><td>${broke ? String(broke.age) : (preBroke ? "Pre-retire hole @ " + preBroke.age : "Still funded")}</td></tr>
+          <tr><td>Age your money runs out (base case)</td><td>${trueBroke ? (trueBroke.youWork || trueBroke.pWork ? "Pre-retire hole @ " + trueBroke.age : String(trueBroke.age)) : "Still funded"}</td></tr>
           <tr><td>Age your money runs out (worst case)</td><td>${brokeS ? String(brokeS.age) : "Still funded"}</td></tr>
           <tr><td>Age your money runs out (best case)</td><td>${brokeBest ? String(brokeBest.age) : "Still funded"}</td></tr>
           <tr><td>Tax you'd pay in your first retirement year</td><td>${fmt(atRet.taxPaid, ccy)}</td></tr>
@@ -1760,23 +1836,78 @@
     }
   }
 
+  /* toggleDependentFields(): shows/hides a group of fields based on a
+     controlling YES/NO select's current value. Used for partner-dependent
+     fields (no point asking someone's partner's salary if they said they
+     don't have one), the survivor sub-fields (only meaningful once
+     survivor modeling itself is on), and LTC detail fields (start age/
+     duration/cost only matter if LTC is modeled at all). Hiding rather
+     than just ignoring avoids the confusion of an editable field sitting
+     there with no visible effect. */
+  function toggleDependentFields(selectId, selectorForFields, showWhen) {
+    if (!has(selectId)) return;
+    const show = sel(selectId, "") === showWhen;
+    document.querySelectorAll(selectorForFields).forEach((el) => {
+      el.style.display = show ? "" : "none";
+    });
+  }
+
+  function refreshFieldVisibility() {
+    toggleDependentFields("partnerOn", "#partnerFields", "YES");
+    if (has("noPartnerNote")) $("noPartnerNote").style.display = sel("partnerOn", "YES") === "NO" ? "" : "none";
+    // Survivor sub-fields only matter once BOTH a partner exists AND
+    // survivor modeling is turned on.
+    const partnerYes = sel("partnerOn", "YES") === "YES";
+    const survYes = sel("survOn", "NO") === "YES";
+    document.querySelectorAll(".surv-dep").forEach((el) => {
+      el.style.display = (partnerYes && survYes) ? "" : "none";
+    });
+    toggleDependentFields("ltcOn", ".ltc-dep", "YES");
+  }
+
+  /* updateEmergNote(): live in-form callout under the emergency-fund input
+     (section 11) — shows the age-based target and the gap immediately,
+     rather than only surfacing it as a flag after Calculate. Runs both on
+     every edit to the relevant fields and at the end of every full
+     calculation, so it never goes stale. */
+  function updateEmergNote() {
+    if (!has("emergNote")) return;
+    const age0 = num("ageNow", 49);
+    const ageR = num("ageRet", 65);
+    const fund = num("emergFund", 0);
+    const core = num("core", 0);
+    const house = num("house", 0);
+    const health = num("health", 0);
+    const target = ((core + house + health) / 12) * emergencyMonths(age0, ageR);
+    const ccyNow = (has("ccy") && $("ccy").value) || "USD";
+    if (target <= 0) { setText("emergNote", ""); return; }
+    if (fund < target * 0.9) {
+      setText("emergNote", "Age-based target ≈ " + fmt(target, ccyNow) + " (" + emergencyMonths(age0, ageR) + " months of essentials). You're " + fmt(target - fund, ccyNow) + " short — see \"What to do next\" after calculating.");
+    } else {
+      setText("emergNote", "Age-based target ≈ " + fmt(target, ccyNow) + " (" + emergencyMonths(age0, ageR) + " months of essentials) — you're at or above it.");
+    }
+  }
+
   /* boot(): the single entry point that wires up the whole page. Runs once
      the DOM is ready (or immediately, if this script happens to load after
-     the DOM is already ready — e.g. if it's ever injected dynamically). */
+     the DOM is already ready — e.g. if it's ever injected dynamically).
+     paintVersion() runs FIRST, before anything else that could plausibly
+     throw — the version badge/footer should never depend on every other
+     boot step having succeeded. Each remaining step is wrapped so one
+     failing step (a missing element after a future edit, a typo) can't
+     silently take down every step after it — the previous version of this
+     function ran everything in one unguarded sequence, so a single early
+     exception could leave the whole page inert with no visible error. */
   function boot() {
-    fillSelects();
-    renderKids();
-    renderDebts();
-    renderGifts();
-    renderPets();
-    bindTables();
-    countryApply();
-    professionApply();
-    cityApply();
     paintVersion();
-    paintPrintMeta();
-    setupScrollTop();
-    setupTabs();
+    const steps = [
+      fillSelects, renderKids, renderDebts, renderGifts, renderPets, bindTables,
+      countryApply, professionApply, cityApply, paintPrintMeta,
+      setupScrollTop, setupTabs, refreshFieldVisibility, updateEmergNote
+    ];
+    steps.forEach((step) => {
+      try { step(); } catch (e) { console.error("RetireCompass boot step failed:", step.name, e); }
+    });
     // Also catch Ctrl/Cmd+P or the browser's native print menu, not just
     // our own Print button, so the print header/footer are always current.
     window.addEventListener("beforeprint", paintPrintMeta);
@@ -1784,8 +1915,12 @@
     safeOn("country", "change", () => { countryApply(); run(); });
     safeOn("profession", "change", () => { professionApply(); run(); });
     safeOn("city", "change", () => { cityApply(); run(); });
+    safeOn("partnerOn", "change", () => { refreshFieldVisibility(); run(); });
+    safeOn("survOn", "change", () => { refreshFieldVisibility(); run(); });
+    safeOn("ltcOn", "change", () => { refreshFieldVisibility(); run(); });
     ["ageNow", "h0", "hk", "aStar", "hCap"].forEach((id) => safeOn(id, "input", paintHazardPreview));
     ["save", "pSave"].forEach((id) => safeOn(id, "input", updateRoomNote));
+    ["emergFund", "ageNow", "ageRet", "core", "house", "health"].forEach((id) => safeOn(id, "input", updateEmergNote));
 
     safeOn("addKid", "click", () => {
       kids.push({ name: "Child " + (kids.length + 1), age: 8, indep: 22, cost: 10000, program: "— pick a program (or edit tuition directly) —", tuition: 15000, tStart: 18, tEnd: 22, afterHelp: 4000, helpUntil: 26, payback: 0 });
@@ -1805,12 +1940,23 @@
     });
 
     safeOn("run", "click", run);
+    safeOn("floatingCalc", "click", run);
+    // Also fire on Ctrl/Cmd+Enter from anywhere in the form, so a person
+    // deep in section 12 doesn't have to scroll back to the top just to
+    // recalculate — the floating button below covers the rest.
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { run(); }
+    });
     // Always recalculate right before printing, so a printed/PDF copy can
     // never show stale numbers from before the person's last edit.
     safeOn("print", "click", () => { run(); paintPrintMeta(); window.print(); });
-    safeOn("reset", "click", () => location.reload());
+    safeOn("reset", "click", () => {
+      if (window.confirm("Reset clears every field back to the starting example — this can't be undone. Continue?")) {
+        location.reload();
+      }
+    });
 
-    run();
+    try { run(); } catch (e) { console.error("RetireCompass initial calculation failed:", e); }
   }
 
   if (document.readyState === "loading") {
