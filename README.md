@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-1b3a4b" alt="version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-1b3a4b" alt="version 1.1.0">
   <img src="https://img.shields.io/badge/license-MIT-0e7c7b" alt="MIT license">
   <img src="https://img.shields.io/badge/runs-100%25%20offline-c9a227" alt="runs offline">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Browser-5c6b73" alt="cross platform">
@@ -80,6 +80,25 @@ python tools/verify_release.py    # full release gate (syntax, offline, manifest
 - Not investment, tax or financial advice, and not a broker or planner.
 - Country tax/pension/account rules are **stylized** and simplified — confirm the specifics for your jurisdiction.
 - A deterministic projection is only as good as the assumptions you enter; change one and the answer changes.
+
+## Revision history
+
+### 1.1.0
+
+Resolves all 13 findings from an independent QA review (NR Koka / Tyche LLC, Sept 2026):
+
+- **Depletion accuracy.** A withdrawal was never capped at what the account actually held, so a drained account kept reporting an ever-growing "draw" as if it were real cash. That phantom figure fed the "accounts at stop-work" KPI and let the chart, the summary cards and the year-by-year table disagree by up to 14 years. Every draw is now capped at the real available balance; the stop-work KPI reads the prior year's real ending balance; and "money runs out" reports the single earliest true-zero age, pre- or post-retirement.
+- **Invalid ages now block calculation entirely** — one clear message, blank results — instead of computing figures next to an easy-to-miss warning.
+- **Partner and long-term-care detail fields show/hide live** with their YES/NO toggle.
+- **Reset now asks for confirmation** before clearing every field.
+- **A floating Calculate button** (plus Ctrl/Cmd+Enter) recalculates from anywhere in the form.
+- **A live emergency-fund callout** shows the age-based target and gap as you type, not only after calculating.
+- **Boot hardening:** the version badge/footer paint first, and each remaining startup step is isolated so one failing step can't blank the page.
+- Clearer fence-post wording on "ends at age X" fields, and corrected section cross-references after Pets became its own section.
+
+### 1.0.0
+
+Initial release — offline, deterministic household retirement navigator.
 
 ## License
 

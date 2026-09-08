@@ -1,5 +1,5 @@
 ; Inno Setup script for RetireCompass. Requires Inno Setup (iscc).
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.0"
 [Setup]
 AppName=RetireCompass
 AppVersion={#AppVersion}
